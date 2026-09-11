@@ -1,0 +1,20 @@
+name: Geometry regression tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  geometry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Show Node version
+        run: node --version
+      - name: Run geometry regression suite
+        run: node tests/geometry-regression.test.js
