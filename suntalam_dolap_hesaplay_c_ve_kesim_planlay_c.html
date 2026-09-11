@@ -243,7 +243,7 @@
                                     <span class="text-xs font-semibold text-slate-800">Dikey Süpürge / Ütü Masası Koridoru</span>
                                     <span class="text-[10px] bg-sky-100 text-sky-800 font-medium px-1.5 py-0.5 rounded">Dikey Yuva</span>
                                 </div>
-                                <p class="text-[11px] text-slate-500">Dolabın sol kenarında boydan boya rafsız dar boşluk.</p>
+                                <p class="text-[11px] text-slate-500">Dolabın sol kenarında ana kullanım yüksekliği boyunca rafsız dar boşluk. Yüklük açıksa koridor yüklük rafının altında devam eder.</p>
                                 <div id="supurge_detay" class="hidden mt-2 pt-2 border-t border-slate-200">
                                     <span class="text-xs text-slate-600">Koridor Genişliği:</span>
                                     <input type="number" id="inp_supurge_w" value="220" step="10" class="w-24 px-2 py-1 text-xs bg-white border border-slate-200 rounded font-mono ml-2"> mm
@@ -263,7 +263,7 @@
                         <label class="block text-xs font-medium text-slate-600 mb-1">Çekmece Konumu</label>
                         <select id="inp_cekmece_konum" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-medium">
                             <option value="yok">Çekmece Yok (Sadece Dolap)</option>
-                            <option value="tam">Altta Dolap Genişliğince Boydan Boya</option>
+                            <option value="tam">Altta Ana Bölümler Boyunca (Süpürge Koridoru Hariç)</option>
                             <option value="bolme1" selected>1. Bölmenin Altında Bağımsız</option>
                             <option value="bolme2">2. Bölmenin Altında Bağımsız</option>
                         </select>
@@ -414,7 +414,7 @@
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
                         <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
                             <i class="fa-solid fa-screwdriver-wrench text-amber-500"></i>
-                            <h3 class="font-semibold text-slate-800 text-sm">Gerekli Vida Listesi</h3>
+                            <h3 class="font-semibold text-slate-800 text-sm">Tahmini Vida Listesi</h3>
                         </div>
                         <ul id="liste_vidalar" class="space-y-2 text-xs text-slate-600">
                             <!-- JS ile dolar -->
@@ -490,6 +490,7 @@
             fugaSag: 3.0,            // Sağ dış fuga payı (mm)
             arkalikCevrePayi: 2.0,   // Arkalık panel çevre payı (mm)
             kutuArkaBosluk: 10.0,    // Çekmece kutusu arkası güvenlik mesafesi (mm)
+            askilikBoruYanPayi: 5.0,  // Askılık borusunun net bölme genişliğinden düşülen toplam montaj payı (mm)
             cekmeceUstAltCalismaBosluk: 25.0, // Çekmece kutusu montaj ve çalışma dikey payı (mm)
             cekmeceTabanKalinligi: 3.0,      // Standart çekmece tabanı suntalam/arkalık kalınlığı (mm)
             suntalamYogunluk: 680,   // kg/m3 (yaklaşık suntalam yoğunluğu)
@@ -531,7 +532,7 @@
 
             let html = `
                 <option value="yok">Çekmece Yok (Sadece Dolap)</option>
-                <option value="tam">Altta Dolap Genişliğince Boydan Boya</option>
+                <option value="tam">Altta Ana Bölümler Boyunca (Süpürge Koridoru Hariç)</option>
             `;
             const gecerliDegerler = ['yok', 'tam'];
             for (let i = 1; i <= bolmeSayisi; i++) {
@@ -750,6 +751,21 @@
             if (kapakTipi === '1' && (!Number.isInteger(kanatSayisi) || kanatSayisi < 1 || kanatSayisi > 4)) {
                 hatalar.push(`Menteşeli kapak kanat sayısı (${kanatSayisi}) 1 ile 4 arasında olmalıdır.`);
             }
+            if (!['1', '2', '3'].includes(kapakTipi)) {
+                hatalar.push(`Kapak tipi (${kapakTipi}) geçersiz. Yalnız menteşeli, sürgülü veya açık dolap seçilebilir.`);
+            }
+
+            const gecerliCekmeceKonumlari = ['yok', 'tam', ...Array.from({ length: Math.max(0, Number.isInteger(bolmeSayisi) ? bolmeSayisi : 0) }, (_, i) => `bolme${i + 1}`)];
+            if (!gecerliCekmeceKonumlari.includes(cekmeceKonum)) {
+                hatalar.push(`Çekmece konumu (${cekmeceKonum}) mevcut ${bolmeSayisi} bölmeli düzen için geçersiz.`);
+            }
+
+            if (supurgeVar && !Number.isFinite(W_supurge)) {
+                hatalar.push(`Süpürge koridor genişliği geçerli bir sayı olmalıdır.`);
+            }
+            if (yuklukVar && !Number.isFinite(H_yukluk)) {
+                hatalar.push(`Yüklük yüksekliği geçerli bir sayı olmalıdır.`);
+            }
 
             if (cekmeceKonum !== 'yok') {
                 if (!Number.isInteger(cekmeceAdet) || cekmeceAdet < 1 || cekmeceAdet > 4) {
@@ -792,6 +808,21 @@
             const W_bolme = (calismaGenisligi - (ortaDikmeAdedi * t)) / bolmeSayisi;
             const H_calisma = H_ic - (yuklukVar ? (H_yukluk + t) : 0.0);
 
+            // Bölme ayarları da hesap motorunun giriş sözleşmesidir. UI dışından
+            // çağrıldığında negatif/sonsuz raf adedi veya bilinmeyen askılık tipi
+            // kesim/nalburiye listesine sızmamalıdır.
+            const bolmeAyarListesi = Array.from({ length: Math.max(0, Number.isInteger(bolmeSayisi) ? bolmeSayisi : 0) }, (_, i) =>
+                (inp.bolmeAyarlari && inp.bolmeAyarlari[i]) || { rafSayisi: 2, askilik: '0' }
+            );
+            bolmeAyarListesi.forEach((ayar, i) => {
+                if (!Number.isInteger(ayar.rafSayisi) || ayar.rafSayisi < 0 || ayar.rafSayisi > 8) {
+                    hatalar.push(`Bölme ${i + 1} raf sayısı (${ayar.rafSayisi}) 0 ile 8 arasında bir tam sayı olmalıdır.`);
+                }
+                if (!['0', '1', '2'].includes(ayar.askilik)) {
+                    hatalar.push(`Bölme ${i + 1} askılık tipi (${ayar.askilik}) geçersiz.`);
+                }
+            });
+
             // 2. Geometrik / Fiziksel İmkânsızlık Kontrolleri (ERROR)
             if (W <= (2 * t)) {
                 hatalar.push(`Dış genişlik (${W} mm) yan panelleri (${(2 * t).toFixed(1)} mm) karşılamıyor; net iç genişlik (${W_ic.toFixed(1)} mm) geçersiz.`);
@@ -824,6 +855,9 @@
             if (W_bolme <= 0) {
                 hatalar.push(`Bölme net iç genişliği (${W_bolme.toFixed(1)} mm) sıfır veya negatif. Dolap genişliğini artırın veya bölme sayısını azaltın.`);
             }
+            if (W_bolme > 0 && W_bolme <= DOLAP_CONFIG.askilikBoruYanPayi && bolmeAyarListesi.some(a => a.askilik === '1' || a.askilik === '2')) {
+                hatalar.push(`Net bölme genişliği (${W_bolme.toFixed(1)} mm), askılık borusu montaj payını (${DOLAP_CONFIG.askilikBoruYanPayi} mm) karşılamıyor.`);
+            }
 
             if (yuklukVar) {
                 if (H_yukluk <= 0) {
@@ -841,29 +875,39 @@
             // P1-6: Sürgü profil validation
             let isIcCekmece = false;
             let surguAciklikH = H_ic;
+            let surguAnaAciklikW = null;
+            let surguKanatW = null;
+            let surguTekTarafAcikW = null;
             if (kapakTipi === '2') {
-                if (surguProfili.rafOnBosluk < 0) {
-                    hatalar.push(`Sürgü rayı raf ön payı (${surguProfili.rafOnBosluk} mm) negatif olamaz.`);
-                }
-                if (surguProfili.yukseklikPayi < 0) {
-                    hatalar.push(`Sürgü mekanizması yükseklik payı (${surguProfili.yukseklikPayi} mm) negatif olamaz.`);
-                }
-                if (surguProfili.kapakBindirme < 0) {
-                    hatalar.push(`Sürgü kapak bindirme payı (${surguProfili.kapakBindirme} mm) negatif olamaz.`);
-                }
+                const profilAlanlari = [
+                    ['raf ön payı', surguProfili.rafOnBosluk],
+                    ['yükseklik payı', surguProfili.yukseklikPayi],
+                    ['kapak bindirme payı', surguProfili.kapakBindirme]
+                ];
+                profilAlanlari.forEach(([ad, deger]) => {
+                    if (!Number.isFinite(deger)) hatalar.push(`Sürgü ${ad} geçerli bir sayı olmalıdır.`);
+                    else if (deger < 0) hatalar.push(`Sürgü ${ad} (${deger} mm) negatif olamaz.`);
+                });
 
                 if (cekmeceKonum === 'tam') {
                     surguAciklikH = H_ic - (cekmeceToplamH + t);
                 }
                 const kayarH = surguAciklikH - surguProfili.yukseklikPayi;
-                const kayarWAciklik = supurgeVar ? calismaGenisligi : W_ic;
-                const kayarW = (kayarWAciklik + surguProfili.kapakBindirme) / 2.0;
+                surguAnaAciklikW = supurgeVar ? calismaGenisligi : W_ic;
+                surguKanatW = (surguAnaAciklikW + surguProfili.kapakBindirme) / 2.0;
+                surguTekTarafAcikW = surguAnaAciklikW - surguKanatW;
 
                 if (surguAciklikH <= surguProfili.yukseklikPayi || kayarH <= 0 || kayarH < 200) {
                     hatalar.push(`Sürgü kapak net yüksekliği (${kayarH.toFixed(1)} mm) uygulanamayacak kadar kısa veya negatif. Sürgü yükseklik payı (${surguProfili.yukseklikPayi} mm) sürgü açıklığından (${surguAciklikH.toFixed(1)} mm) küçük olmalıdır.`);
                 }
-                if (kayarW <= 0 || kayarW < 200) {
-                    hatalar.push(`Sürgü kapak kesim genişliği (${kayarW.toFixed(1)} mm) geçersiz veya uygulanamayacak kadar dar.`);
+                if (surguKanatW <= 0 || surguKanatW < 200) {
+                    hatalar.push(`Sürgü kapak kesim genişliği (${surguKanatW.toFixed(1)} mm) geçersiz veya uygulanamayacak kadar dar.`);
+                }
+                if (Number.isFinite(surguAnaAciklikW) && Number.isFinite(surguProfili.kapakBindirme) && surguProfili.kapakBindirme >= surguAnaAciklikW) {
+                    hatalar.push(`Sürgü kapak bindirmesi (${surguProfili.kapakBindirme} mm), ana sürgü açıklığından (${surguAnaAciklikW.toFixed(1)} mm) küçük olmalıdır; aksi halde kapaklar kullanılabilir açıklık bırakmaz.`);
+                }
+                if (Number.isFinite(surguTekTarafAcikW) && surguTekTarafAcikW <= 0) {
+                    hatalar.push(`Sürgü sisteminde açılabilir net geçiş genişliği (${surguTekTarafAcikW.toFixed(1)} mm) pozitif olmalıdır.`);
                 }
             }
 
@@ -924,6 +968,23 @@
 
                 if (kutuIcW <= 0) {
                     hatalar.push(`Çekmece kutusu net iç genişliği (${kutuIcW.toFixed(1)} mm) sıfır veya negatif. Ray montaj boşluğunu veya bölme genişliğini kontrol edin.`);
+                }
+
+                // Çift raylı sürgü arkasındaki iç çekmece, kapaklar bir yana
+                // toplandığında oluşan net açıklıktan fiziksel olarak çıkabilmelidir.
+                // Özellikle 3 bölmeli dolabın orta bölmesi iki kanatlı bypass
+                // sisteminde hiçbir uç konumda tamamen açığa çıkmaz.
+                if (isIcCekmece && cekmeceKonum.startsWith('bolme') && Number.isFinite(surguTekTarafAcikW)) {
+                    const bNum = parseInt(cekmeceKonum.replace('bolme', ''), 10);
+                    const bolmeSol = (bNum - 1) * (W_bolme + t);
+                    const cekmeceSol = bolmeSol + rayYanBosluk;
+                    const cekmeceSag = cekmeceSol + kutuDisW;
+                    const sagAcikBaslangic = surguAnaAciklikW - surguTekTarafAcikW;
+                    const soldanTamAciliyor = cekmeceSag <= surguTekTarafAcikW + 1e-6;
+                    const sagdanTamAciliyor = cekmeceSol >= sagAcikBaslangic - 1e-6;
+                    if (!soldanTamAciliyor && !sagdanTamAciliyor) {
+                        hatalar.push(`Sürgü kapak arkasındaki ${bNum}. bölme çekmecesi tam açılamaz: çekmece önü ${cekmeceSol.toFixed(1)}–${cekmeceSag.toFixed(1)} mm aralığında, sürgünün tek tarafta bırakabildiği net açıklık ${surguTekTarafAcikW.toFixed(1)} mm'dir. Çekmeceyi dış bölmeye taşıyın, sürgü profil/bindirme değerini değiştirin veya farklı kapak sistemi kullanın.`);
+                    }
                 }
             }
 
@@ -1171,7 +1232,7 @@
 
             let toplamSabitRaf = 0;
             for (let i = 0; i < bolmeSayisi; i++) {
-                const bAyar = (inp.bolmeAyarlari && inp.bolmeAyarlari[i]) || { rafSayisi: 2, askilik: '0' };
+                const bAyar = bolmeAyarListesi[i];
                 if (bAyar.rafSayisi > 0) {
                     toplamSabitRaf += bAyar.rafSayisi;
                     kesimler.push({
@@ -1287,6 +1348,20 @@
 
             // D. Kapak Modelleri & Kesimleri (P1-1)
             const kapakModelleri = [];
+
+            const tahminiMenteseAdedi = (kapak) => {
+                const alanM2 = (kapak.w * kapak.h) / 1e6;
+                const agirlikKg = alanM2 * (t / 1000) * DOLAP_CONFIG.suntalamYogunluk;
+                let adet = 3;
+                if (kapak.h < DOLAP_CONFIG.menteseEsikleri.hKucuk) adet = 2;
+                else if (kapak.h <= DOLAP_CONFIG.menteseEsikleri.hOrta) adet = 3;
+                else if (kapak.h <= DOLAP_CONFIG.menteseEsikleri.hBuyuk) adet = 4;
+                else adet = 5;
+                if (agirlikKg > 15 && adet < 4) adet = 4;
+                if (agirlikKg > 20 && adet < 5) adet = 5;
+                if (kapak.w > 600) adet += 1;
+                return adet;
+            };
 
             if (kapakTipi === '1') { // Menteşeli Kapak
                 // Süpürge koridoru kapağı
@@ -1420,24 +1495,9 @@
                 });
 
                 // Menteşe Adedi & Bindirme Tipi Analizi
-                let toplamMenteseAdet = 0;
-                kapakModelleri.forEach(km => {
-                    const alanM2 = (km.w * km.h) / 1e6;
-                    const agirlikKg = alanM2 * (t / 1000) * DOLAP_CONFIG.suntalamYogunluk;
-                    let mAdet = 3;
-                    if (km.h < DOLAP_CONFIG.menteseEsikleri.hKucuk) mAdet = 2;
-                    else if (km.h <= DOLAP_CONFIG.menteseEsikleri.hOrta) mAdet = 3;
-                    else if (km.h <= DOLAP_CONFIG.menteseEsikleri.hBuyuk) mAdet = 4;
-                    else mAdet = 5;
+                const toplamMenteseAdet = kapakModelleri.reduce((toplam, km) => toplam + tahminiMenteseAdedi(km), 0);
 
-                    if (agirlikKg > 15 && mAdet < 4) mAdet = 4;
-                    if (agirlikKg > 20 && mAdet < 5) mAdet = 5;
-                    if (km.w > 600) mAdet += 1;
-
-                    toplamMenteseAdet += mAdet;
-                });
-
-                nalburiye.push(`Tahmini menteşe ihtiyacı: ${toplamMenteseAdet} Adet 35 mm Tas Menteşe + Taban Sacı. Nihai menteşe sayısı ve tipi kullanılan üreticinin taşıma/bindirme tablosuna göre doğrulanmalıdır (Dış dikmeler için düz/tam bini, ortak orta dikmeye binen kapaklar için yarım deveboynu menteşe tercih edilmelidir).`);
+                nalburiye.push(`Tahmini menteşe ihtiyacı: ${toplamMenteseAdet} Adet 35 mm Tas Menteşe + Taban Sacı. Nihai menteşe sayısı, bindirme tipi ve taban sacı kullanılan üreticinin taşıma/bindirme tablosuna ve gerçek konstrüksiyona göre doğrulanmalıdır.`);
 
                 const menteseVida = toplamMenteseAdet * 4 + 8;
                 vidalar.push(`<strong>${menteseVida} Adet 3.5x18 mm</strong> Tas Menteşe ve Taban Sacı Vidası`);
@@ -1455,20 +1515,24 @@
                             bant: "4 Kenar Çevre",
                             bolum: "Dış Kapak"
                         });
-                        kapakModelleri.push({
+                        const supurgeKapagi = {
                             ad: "Süpürge Kapağı",
                             x: supurgeZone.x,
                             y: supurgeZone.y,
                             w: supurgeZone.w,
                             h: supurgeZone.h,
                             bolmeNo: 'supurge'
-                        });
+                        };
+                        kapakModelleri.push(supurgeKapagi);
+                        const supurgeMenteseAdet = tahminiMenteseAdedi(supurgeKapagi);
+                        nalburiye.push(`Süpürge koridoru kapağı için tahmini ${supurgeMenteseAdet} Adet 35 mm Tas Menteşe + Taban Sacı. Nihai tip/kapasite üretici tablosuna göre doğrulanmalıdır.`);
+                        vidalar.push(`<strong>${supurgeMenteseAdet * 4 + 4} Adet 3.5x18 mm</strong> Süpürge Koridoru Menteşe/Taban Sacı Vidası`);
                     }
                 }
 
                 const kayarH = surguAciklikH - surguProfili.yukseklikPayi;
-                const kayarWAciklik = supurgeVar ? calismaGenisligi : W_ic;
-                const kayarW = (kayarWAciklik + surguProfili.kapakBindirme) / 2.0;
+                const kayarWAciklik = surguAnaAciklikW;
+                const kayarW = surguKanatW;
 
                 kesimler.push({
                     ad: "Kayar Kapak Kanadı",
@@ -1537,9 +1601,16 @@
                 }
             });
 
+            const disSinirIcinde = parca =>
+                parca.x >= -1e-6 && parca.y >= -1e-6 &&
+                (parca.x + parca.w) <= W + 1e-6 &&
+                (parca.y + parca.h) <= H + 1e-6;
+
             facadeZones.forEach(zone => {
                 if (![zone.x, zone.y, zone.w, zone.h].every(Number.isFinite) || zone.w <= 0 || zone.h <= 0) {
                     invariantHatalari.push(`${zone.id}: facade zone ölçüsü geçersiz.`);
+                } else if (!disSinirIcinde(zone)) {
+                    invariantHatalari.push(`${zone.id}: facade zone dolap dış sınırlarının dışına taşıyor.`);
                 }
             });
 
@@ -1554,12 +1625,16 @@
             kapakModelleri.forEach(kapak => {
                 if (![kapak.x, kapak.y, kapak.w, kapak.h].every(Number.isFinite) || kapak.w <= 0 || kapak.h <= 0) {
                     invariantHatalari.push(`${kapak.ad}: kapak geometrisi geçersiz.`);
+                } else if (!disSinirIcinde(kapak)) {
+                    invariantHatalari.push(`${kapak.ad}: kapak dolap dış sınırlarının dışına taşıyor.`);
                 }
             });
 
             klapalarListesi.forEach(klapa => {
                 if (![klapa.x, klapa.y, klapa.w, klapa.h].every(Number.isFinite) || klapa.w <= 0 || klapa.h <= 0) {
                     invariantHatalari.push(`${klapa.ad}: klapa geometrisi geçersiz.`);
+                } else if (!disSinirIcinde(klapa)) {
+                    invariantHatalari.push(`${klapa.ad}: klapa dolap dış sınırlarının dışına taşıyor.`);
                 }
             });
 
