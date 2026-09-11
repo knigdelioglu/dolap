@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suntalam Dolap ve Kesim Planlayıcı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        code, pre, .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .card {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+            }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
+                    <i class="fa-solid fa-ruler-combined text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-900 text-lg leading-tight">Suntalam Dolap Ustası</h1>
+                    <p class="text-xs text-slate-500">Amatör İmalat İçin Otomatik Kesim & Donanım Hesaplayıcı</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="ornekDolapYukle('standart')" class="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition">
+                    Standart 2 Kapaklı
+                </button>
+                <button onclick="ornekDolapYukle('genis')" class="px-3 py-1.5 text-xs font-medium bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg transition">
+                    Geniş Sürgü Dolap
+                </button>
+                <button onclick="window.print()" class="px-3 py-1.5 text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i>
+                    <span>Yazdır</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <div class="lg:col-span-5 space-y-5 no-print">
+
+                <!-- 1. Malzeme ve Dış Ölçüler -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-700 font-bold text-xs flex items-center justify-center">1</span>
+                            <h2 class="font-semibold text-slate-800 text-sm">Gövde ve Malzeme Ölçüleri</h2>
+                        </div>
+                        <span class="text-xs text-slate-400 font-mono">Tüm ölçüler (mm)</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Sunta/MDF Kalınlığı</label>
+                            <div class="relative">
+                                <input type="number" id="inp_t" value="18" step="0.5" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-mono font-medium">
+                                <span class="absolute right-3 top-2.5 text-xs text-slate-400">mm</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Kenar Bandı (PVC)</label>
+                            <div class="relative">
+                                <input type="number" id="inp_b" value="0.4" step="0.1" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-mono font-medium">
+                                <span class="absolute right-3 top-2.5 text-xs text-slate-400">mm</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Arkalık Kalınlığı</label>
+                            <div class="relative">
+                                <input type="number" id="inp_arkalik_t" value="3" step="0.5" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-mono font-medium">
+                                <span class="absolute right-3 top-2.5 text-xs text-slate-400">mm</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Dış Genişlik</label>
+                            <input type="number" id="inp_w" value="1400" step="10" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Dış Yükseklik</label>
+                            <input type="number" id="inp_h" value="2000" step="10" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1" title="Bitmiş dış derinlik. Gövde paneli arkalık payı kadar düşülür.">Dış Derinlik (Net)</label>
+                            <input type="number" id="inp_d" value="550" step="10" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-mono">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-3 pt-1 text-[11px] text-slate-500">
+                        <span><i class="fa-solid fa-circle-info text-amber-500 mr-1"></i>Dış derinlik bitmiş fiziksel ölçüdür; gövde panelleri arkalık kalınlığı kadar otomatik geriye çekilir.</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Baza (Süpürgelik) Yüksekliği (0 ise yere sıfır)</label>
+                        <div class="relative">
+                            <input type="number" id="inp_baza" value="80" step="5" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-mono">
+                            <span class="absolute right-3 top-2.5 text-xs text-slate-400">mm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+                        <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-700 font-bold text-xs flex items-center justify-center">2</span>
+                        <h2 class="font-semibold text-slate-800 text-sm">Kapak ve Bölme Düzeni</h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Kapak Mekanizması</label>
+                            <select id="inp_kapak" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-medium">
+                                <option value="1">Menteşeli (Dıştan Bini)</option>
+                                <option value="2">İçten Kayar Kapak (Çift Ray)</option>
+                                <option value="3">Açık Dolap (Kapaksız)</option>
+                            </select>
+                        </div>
+                        <div id="mentese_kanat_kapsayici">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Kapak Kanat Sayısı</label>
+                            <select id="inp_kanat" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-medium">
+                                <option value="1">1 Kanat</option>
+                                <option value="2" selected>2 Kanat</option>
+                                <option value="3">3 Kanat</option>
+                                <option value="4">4 Kanat</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Sürgülü Kapak Profil Parametreleri -->
+                    <div id="surgu_profil_kapsayici" class="hidden p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-700">Sürgü Ray Sistemi Profili</span>
+                            <span class="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Ray Markasına Göre Değişebilir</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[11px] text-slate-600 mb-0.5" title="Ray mekanizması için rafların ve çekmecelerin geriye çekilme mesafesi">Raf Ön Boşluk</label>
+                                <div class="relative">
+                                    <input type="number" id="inp_surgu_raf_bosluk" value="85" step="5" class="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-mono">
+                                    <span class="absolute right-1.5 top-1.5 text-[10px] text-slate-400">mm</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-600 mb-0.5" title="Üst ve alt makara/kılavuz çalışma payı">Yükseklik Payı</label>
+                                <div class="relative">
+                                    <input type="number" id="inp_surgu_h_payi" value="40" step="5" class="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-mono">
+                                    <span class="absolute right-1.5 top-1.5 text-[10px] text-slate-400">mm</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-600 mb-0.5" title="İki kanadın ortada birbiri üzerine binme payı">Bindirme</label>
+                                <div class="relative">
+                                    <input type="number" id="inp_surgu_bindirme" value="30" step="5" class="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-mono">
+                                    <span class="absolute right-1.5 top-1.5 text-[10px] text-slate-400">mm</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Dikey Ana Bölme Sayısı</label>
+                        <select id="inp_bolme_sayisi" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-medium">
+                            <option value="1">1 Bölme (Geniş tek alan, dikmesiz)</option>
+                            <option value="2" selected>2 Bölme (1 Orta Dikme)</option>
+                            <option value="3">3 Bölme (2 Orta Dikme)</option>
+                        </select>
+                        <p class="text-[11px] text-slate-400 mt-1">18mm suntalam 85 cm'den geniş açıklıklarda zamanla esner.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+                        <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-700 font-bold text-xs flex items-center justify-center">3</span>
+                        <h2 class="font-semibold text-slate-800 text-sm">İşlevsel Modüller & Eklentiler</h2>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="flex items-start gap-3 p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 cursor-pointer transition">
+                            <input type="checkbox" id="chk_yukluk" class="mt-0.5 w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300">
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-slate-800">Üst Yüklük / Valiz Katı</span>
+                                    <span class="text-[10px] bg-amber-100 text-amber-800 font-medium px-1.5 py-0.5 rounded">Boydan Raf</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500">Tavanda yorgan ve büyük valizler için kesintisiz geniş raf.</p>
+                                <div id="yukluk_detay" class="hidden mt-2 pt-2 border-t border-slate-200">
+                                    <span class="text-xs text-slate-600">Yüklük Yüksekliği:</span>
+                                    <input type="number" id="inp_yukluk_h" value="400" step="10" class="w-24 px-2 py-1 text-xs bg-white border border-slate-200 rounded font-mono ml-2"> mm
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="flex items-start gap-3 p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 cursor-pointer transition">
+                            <input type="checkbox" id="chk_supurge" class="mt-0.5 w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300">
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-slate-800">Dikey Süpürge / Ütü Masası Koridoru</span>
+                                    <span class="text-[10px] bg-sky-100 text-sky-800 font-medium px-1.5 py-0.5 rounded">Dikey Yuva</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500">Dolabın sol kenarında boydan boya rafsız dar boşluk.</p>
+                                <div id="supurge_detay" class="hidden mt-2 pt-2 border-t border-slate-200">
+                                    <span class="text-xs text-slate-600">Koridor Genişliği:</span>
+                                    <input type="number" id="inp_supurge_w" value="220" step="10" class="w-24 px-2 py-1 text-xs bg-white border border-slate-200 rounded font-mono ml-2"> mm
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+                        <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-700 font-bold text-xs flex items-center justify-center">4</span>
+                        <h2 class="font-semibold text-slate-800 text-sm">Teleskopik Çekmece Düzeni</h2>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Çekmece Konumu</label>
+                        <select id="inp_cekmece_konum" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-medium">
+                            <option value="yok">Çekmece Yok (Sadece Dolap)</option>
+                            <option value="tam">Altta Dolap Genişliğince Boydan Boya</option>
+                            <option value="bolme1" selected>1. Bölmenin Altında Bağımsız</option>
+                            <option value="bolme2">2. Bölmenin Altında Bağımsız</option>
+                        </select>
+                    </div>
+
+                    <div id="cekmece_detaylari" class="space-y-3 pt-1">
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Çekmece Adedi</label>
+                                <select id="inp_cekmece_adet" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-mono font-medium">
+                                    <option value="1">1 Adet</option>
+                                    <option value="2">2 Adet</option>
+                                    <option value="3" selected>3 Adet</option>
+                                    <option value="4">4 Adet</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Teleskopik Ray Boyu</label>
+                                <select id="inp_ray_boyu" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-mono font-medium">
+                                    <option value="300">300 mm</option>
+                                    <option value="350">350 mm</option>
+                                    <option value="400">400 mm</option>
+                                    <option value="450" selected>450 mm</option>
+                                    <option value="500">500 mm</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1" title="Standart yan montaj teleskopik ray için varsayılan 13 mm/yan">Ray Yan Boşluğu</label>
+                                <div class="relative">
+                                    <input type="number" id="inp_ray_yan_bosluk" value="13" step="0.5" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-mono">
+                                    <span class="absolute right-3 top-2.5 text-xs text-slate-400">mm</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Standart yan montaj teleskopik bilyalı ray için varsayılan 13 mm/yan (toplam 26 mm) boşluk düşülür.</p>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Kutu Yüksekliği</label>
+                                <input type="number" id="inp_kutu_h" value="130" step="5" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Çekmece Cephe Toplam H</label>
+                                <input type="number" id="inp_cekmece_toplam_h" value="560" step="10" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-mono">
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Toplam H yalnız çekmece cephe bölgesidir. Üst taşıyıcı ara tabla (+t kalınlık) bu alanın üzerine ayrıca eklenir (toplam modül: Cephe H + t).</p>
+
+                        <label class="flex items-center gap-2 pt-1 cursor-pointer">
+                            <input type="checkbox" id="chk_sig_cekmece" class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300">
+                            <span class="text-xs text-slate-700 font-medium">En üstteki çekmeceyi sığ aksesuar kutusu yap (85 mm)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+                        <span class="w-6 h-6 rounded-md bg-amber-100 text-amber-700 font-bold text-xs flex items-center justify-center">5</span>
+                        <h2 class="font-semibold text-slate-800 text-sm">Bölme İçi Raf & Askılıklar</h2>
+                    </div>
+
+                    <div id="bolme_ayarlari_kutusu" class="space-y-4">
+                        <!-- JavaScript dinamik olarak bölme sayısı kadar kart oluşturacak -->
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- Merkezi Geometri Doğrulama & Uyarı Kutusu -->
+                <div id="kutu_uyarilar" class="space-y-3 hidden no-print"></div>
+
+                <!-- 2D Canlı Dolap Ön Görünümü -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                            <h2 class="font-semibold text-slate-800 text-sm">Canlı 2D Dolap Kesit Şeması</h2>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label class="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                                <input type="checkbox" id="chk_kapak_goster" class="w-3.5 h-3.5 rounded text-amber-600">
+                                <span>Kapakları Göster</span>
+                            </label>
+                            <span id="etiket_ebat" class="text-xs font-mono font-medium px-2 py-0.5 bg-slate-100 rounded text-slate-700">1400 x 2000 mm</span>
+                        </div>
+                    </div>
+
+                    <div class="relative bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-center min-h-[380px] overflow-hidden">
+                        <div id="svg_sema_kapsayici" class="w-full flex items-center justify-center">
+                            <!-- SVG dinamik çizilecek -->
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 mt-2 px-1">
+                        <div class="flex items-center gap-4">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-amber-400 rounded-sm"></span> Suntalam Gövde</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-sky-400 rounded-sm"></span> Ray/Donanım</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-slate-300 rounded-sm"></span> Raflar</span>
+                        </div>
+                        <span id="ic_alan_bilgi" class="font-mono text-slate-500">Net İç Yükseklik: 1884 mm</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden card">
+                    <div class="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h2 class="font-bold text-slate-900 text-base">Net Kesim Listesi (Testere Ölçüleri)</h2>
+                            <p class="text-xs text-slate-500">Kenar bantları düşülmüş doğrudan marangoza/kesimhaneye verilecek ölçülerdir.</p>
+                        </div>
+                        <div class="flex items-center gap-2 no-print">
+                            <button onclick="panoyaKopyala()" class="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
+                                <i class="fa-regular fa-copy"></i>
+                                <span>Kopyala</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase font-medium border-b border-slate-200">
+                                <tr>
+                                    <th class="py-3 px-4">Parça Adı</th>
+                                    <th class="py-3 px-2 text-center">Adet</th>
+                                    <th class="py-3 px-3 text-right font-mono">Kesim Boy</th>
+                                    <th class="py-3 px-3 text-right font-mono">Kesim En</th>
+                                    <th class="py-3 px-4">Kenar Bandı</th>
+                                    <th class="py-3 px-4">Açıklama / Konum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablo_kesim_govdesi" class="divide-y divide-slate-100 font-sans">
+                                <!-- Dinamik satırlar buraya gelir -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="p-4 bg-amber-50/70 border-t border-amber-200/60 text-xs text-amber-900 flex items-start gap-2.5">
+                        <i class="fa-solid fa-circle-info text-amber-600 mt-0.5 text-sm"></i>
+                        <div>
+                            <span class="font-semibold">Bant Düşüm Kuralı:</span>
+                            Tablodaki ölçüler seçtiğiniz <span id="ozet_bant_kalinligi" class="font-mono font-bold">0.4 mm</span> kenar bandına göre hesaplanmıştır. 4 tarafı bantlanan kapakların boyundan ve eninden 2'şer kat bant payı otomatik düşülmüştür.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 card">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                        <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+                            <i class="fa-solid fa-screwdriver-wrench text-amber-500"></i>
+                            <h3 class="font-semibold text-slate-800 text-sm">Gerekli Vida Listesi</h3>
+                        </div>
+                        <ul id="liste_vidalar" class="space-y-2 text-xs text-slate-600">
+                            <!-- JS ile dolar -->
+                        </ul>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                        <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+                            <i class="fa-solid fa-toolbox text-amber-500"></i>
+                            <h3 class="font-semibold text-slate-800 text-sm">Nalburiye & Aksesuarlar</h3>
+                        </div>
+                        <ul id="liste_nalburiye" class="space-y-2 text-xs text-slate-600">
+                            <!-- JS ile dolar -->
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 no-print space-y-3">
+                    <h3 class="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                        <span>Amatör İmalat İçin Marangoz Püf Noktaları</span>
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-600">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <span class="font-semibold text-slate-800 block mb-1">1. Çatlatmama Kuralı</span>
+                            Suntalamın cumbasına vida atmadan önce mutlaka <strong>2.5 mm matkap ucuyla</strong> kılavuz delik delin.
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <span class="font-semibold text-slate-800 block mb-1">2. Ray Montaj Boşluğu</span>
+                            Standart yan montaj bilyalı raylar her iki yanda <strong>13 mm (toplam 26 mm)</strong> net montaj payı gerektirir.
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <span class="font-semibold text-slate-800 block mb-1">3. Arkalık ve Dış Derinlik</span>
+                            Net dış derinlik için gövde panelleri arkalık kalınlığı kadar dar kesilir; çakmadan önce diyagonal gönyeyi mutlaka ölçün.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="toast_mesaj" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 border border-slate-700">
+        <i class="fa-solid fa-check text-emerald-400"></i>
+        <span id="toast_metin">Listeleme panoya kopyalandı!</span>
+    </div>
+
+    <script>
+        // State ve Dinamik Ayarlar
+        let bolmeAyarlari = [
+            { rafSayisi: 3, askilik: '0' },
+            { rafSayisi: 1, askilik: '1' },
+            { rafSayisi: 2, askilik: '0' }
+        ];
+
+        // Toast Bildirim Sistemi (alert yerine)
+        function bildirimGoster(mesaj) {
+            const toast = document.getElementById('toast_mesaj');
+            const metin = document.getElementById('toast_metin');
+            metin.textContent = mesaj;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        // Merkezi Profil & Konfigürasyon Sabitleri (Magic number'lar kaldırıldı)
+        const DOLAP_CONFIG = {
+            fuga: 3.0,               // Standart ön yüz ortak fuga payı (mm)
+            fugaUst: 3.0,            // Üst dış fuga payı (mm)
+            fugaAlt: 3.0,            // Alt dış fuga payı (mm)
+            fugaSol: 3.0,            // Sol dış fuga payı (mm)
+            fugaSag: 3.0,            // Sağ dış fuga payı (mm)
+            arkalikCevrePayi: 2.0,   // Arkalık panel çevre payı (mm)
+            kutuArkaBosluk: 10.0,    // Çekmece kutusu arkası güvenlik mesafesi (mm)
+            cekmeceUstAltCalismaBosluk: 25.0, // Çekmece kutusu montaj ve çalışma dikey payı (mm)
+            cekmeceTabanKalinligi: 3.0,      // Standart çekmece tabanı suntalam/arkalık kalınlığı (mm)
+            suntalamYogunluk: 680,   // kg/m3 (yaklaşık suntalam yoğunluğu)
+            rafOnBosluk: {
+                menteseli: 20.0,     // Menteşeli kapak arkası raf girintisi (mm)
+                acik: 10.0,          // Açık dolap estetik pahı (mm)
+                surguVarsayilan: 85.0// Sürgü profil ray çalışma payı (mm)
+            },
+            menteseEsikleri: {
+                hKucuk: 900,         // < 900 mm: 2 menteşe
+                hOrta: 1600,         // 900 - 1600 mm: 3 menteşe
+                hBuyuk: 2000,        // 1600 - 2000 mm: 4 menteşe
+                                     // > 2000 mm: 5 menteşe
+                maxGenislik: 600,    // 600 mm üzeri geniş kapak uyarısı
+                kritikGenislik: 750  // 750 mm üzeri aşırı geniş kapak uyarısı
+            }
+        };
+
+        // Kullanıcının bilinçli girdiği 0 değerlerini koruyan güvenli sayı okuyucu
+        function sayiOku(id, varsayilan) {
+            const el = document.getElementById(id);
+            if (!el) return varsayilan;
+            const v = parseFloat(el.value);
+            return Number.isFinite(v) ? v : varsayilan;
+        }
+
+        function tamsayiOku(id, varsayilan) {
+            const el = document.getElementById(id);
+            if (!el) return varsayilan;
+            const v = parseInt(el.value, 10);
+            return Number.isFinite(v) ? v : varsayilan;
+        }
+
+        // Çekmece Konum Seçeneklerini Bölme Sayısına Göre Dinamik Üret
+        function cekmeceKonumSecenekleriniGuncelle(bolmeSayisi) {
+            const sel = document.getElementById('inp_cekmece_konum');
+            if (!sel) return;
+            const oncekiDeger = sel.value;
+
+            let html = `
+                <option value="yok">Çekmece Yok (Sadece Dolap)</option>
+                <option value="tam">Altta Dolap Genişliğince Boydan Boya</option>
+            `;
+            const gecerliDegerler = ['yok', 'tam'];
+            for (let i = 1; i <= bolmeSayisi; i++) {
+                html += `<option value="bolme${i}">${i}. Bölmenin Altında Bağımsız</option>`;
+                gecerliDegerler.push(`bolme${i}`);
+            }
+            sel.innerHTML = html;
+
+            if (gecerliDegerler.includes(oncekiDeger)) {
+                sel.value = oncekiDeger;
+            } else {
+                sel.value = bolmeSayisi > 0 ? 'bolme1' : 'yok';
+            }
+        }
+
+        // Örnek Hazır Şablon Yükleme
+        function ornekDolapYukle(tip) {
+            if (tip === 'standart') {
+                document.getElementById('inp_t').value = 18;
+                document.getElementById('inp_b').value = 0.4;
+                document.getElementById('inp_arkalik_t').value = 3;
+                document.getElementById('inp_w').value = 1400;
+                document.getElementById('inp_h').value = 2000;
+                document.getElementById('inp_d').value = 550;
+                document.getElementById('inp_baza').value = 80;
+                document.getElementById('inp_kapak').value = '1';
+                document.getElementById('inp_kanat').value = '2';
+                document.getElementById('inp_bolme_sayisi').value = '2';
+                cekmeceKonumSecenekleriniGuncelle(2);
+                document.getElementById('chk_yukluk').checked = false;
+                document.getElementById('chk_supurge').checked = false;
+                document.getElementById('inp_cekmece_konum').value = 'bolme1';
+                document.getElementById('inp_cekmece_adet').value = '3';
+                document.getElementById('inp_ray_boyu').value = '450';
+                document.getElementById('inp_ray_yan_bosluk').value = '13';
+                document.getElementById('inp_kutu_h').value = '130';
+                document.getElementById('inp_cekmece_toplam_h').value = '560';
+                document.getElementById('chk_sig_cekmece').checked = false;
+                bolmeAyarlari[0] = { rafSayisi: 2, askilik: '0' };
+                bolmeAyarlari[1] = { rafSayisi: 1, askilik: '1' };
+            } else if (tip === 'genis') {
+                document.getElementById('inp_t').value = 18;
+                document.getElementById('inp_b').value = 0.4;
+                document.getElementById('inp_arkalik_t').value = 3;
+                document.getElementById('inp_w').value = 1800;
+                document.getElementById('inp_h').value = 2200;
+                document.getElementById('inp_d').value = 650;
+                document.getElementById('inp_baza').value = 80;
+                document.getElementById('inp_kapak').value = '2';
+                document.getElementById('inp_bolme_sayisi').value = '2';
+                cekmeceKonumSecenekleriniGuncelle(2);
+                document.getElementById('chk_yukluk').checked = true;
+                document.getElementById('inp_yukluk_h').value = 450;
+                document.getElementById('chk_supurge').checked = true;
+                document.getElementById('inp_supurge_w').value = 250;
+                document.getElementById('inp_cekmece_konum').value = 'bolme2';
+                document.getElementById('inp_cekmece_adet').value = '3';
+                document.getElementById('inp_ray_boyu').value = '450';
+                document.getElementById('inp_ray_yan_bosluk').value = '13';
+                document.getElementById('inp_kutu_h').value = '130';
+                document.getElementById('inp_cekmece_toplam_h').value = '560';
+                document.getElementById('chk_sig_cekmece').checked = false;
+                document.getElementById('inp_surgu_raf_bosluk').value = '85';
+                document.getElementById('inp_surgu_h_payi').value = '40';
+                document.getElementById('inp_surgu_bindirme').value = '30';
+                bolmeAyarlari[0] = { rafSayisi: 2, askilik: '1' };
+                bolmeAyarlari[1] = { rafSayisi: 3, askilik: '0' };
+            }
+            arayeGuncelle();
+            hesapla();
+            bildirimGoster('Şablon yüklendi!');
+        }
+
+        function bolmeArayuzunuOlustur() {
+            const bolmeSayisi = parseInt(document.getElementById('inp_bolme_sayisi').value) || 2;
+            const kutu = document.getElementById('bolme_ayarlari_kutusu');
+            kutu.innerHTML = '';
+
+            for (let i = 0; i < bolmeSayisi; i++) {
+                if (!bolmeAyarlari[i]) {
+                    bolmeAyarlari[i] = { rafSayisi: 2, askilik: '0' };
+                }
+                const b = bolmeAyarlari[i];
+
+                const kart = document.createElement('div');
+                kart.className = 'p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl space-y-2.5';
+                kart.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold text-xs text-slate-800">Bölme ${i + 1} İç Düzeni</span>
+                        <span class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono">Bölüm #${i + 1}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-1">Sabit Raf Adedi</label>
+                            <input type="number" min="0" max="8" value="${b.rafSayisi}" onchange="bolmeRafGuncelle(${i}, this.value)" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-1">Askılık Sistemi</label>
+                            <select onchange="bolmeAskilikGuncelle(${i}, this.value)" class="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none font-medium">
+                                <option value="0" ${b.askilik === '0' ? 'selected' : ''}>Askılık Yok</option>
+                                <option value="1" ${b.askilik === '1' ? 'selected' : ''}>Tek Kat Uzun Askılık</option>
+                                <option value="2" ${b.askilik === '2' ? 'selected' : ''}>Çift Kat Gömleklik</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                kutu.appendChild(kart);
+            }
+        }
+
+        function bolmeRafGuncelle(index, val) {
+            bolmeAyarlari[index].rafSayisi = parseInt(val) || 0;
+            hesapla();
+        }
+
+        function bolmeAskilikGuncelle(index, val) {
+            bolmeAyarlari[index].askilik = val;
+            hesapla();
+        }
+
+        function arayeGuncelle() {
+            const bolmeSayisi = parseInt(document.getElementById('inp_bolme_sayisi').value) || 2;
+            cekmeceKonumSecenekleriniGuncelle(bolmeSayisi);
+
+            // Yüklük kutusu
+            const yuklukAktif = document.getElementById('chk_yukluk').checked;
+            document.getElementById('yukluk_detay').classList.toggle('hidden', !yuklukAktif);
+
+            // Süpürge kutusu
+            const supurgeAktif = document.getElementById('chk_supurge').checked;
+            document.getElementById('supurge_detay').classList.toggle('hidden', !supurgeAktif);
+
+            // Kapak tipi
+            const kapakTipi = document.getElementById('inp_kapak').value;
+            document.getElementById('mentese_kanat_kapsayici').classList.toggle('hidden', kapakTipi !== '1');
+            const surguKapsayici = document.getElementById('surgu_profil_kapsayici');
+            if (surguKapsayici) {
+                surguKapsayici.classList.toggle('hidden', kapakTipi !== '2');
+            }
+
+            // Çekmece kutusu
+            const cekmeceKonum = document.getElementById('inp_cekmece_konum').value;
+            document.getElementById('cekmece_detaylari').classList.toggle('hidden', cekmeceKonum === 'yok');
+
+            bolmeArayuzunuOlustur();
+        }
+
+        // ==========================================
+        // MERKEZİ GEOMETRİ HESAPLAMA MOTORU
+        // ==========================================
+        function hesaplaGeometri(inp) {
+            const t = inp.t;
+            const b = inp.b;
+            const W = inp.W;
+            const H = inp.H;
+            const D = inp.D;
+            const H_baza = inp.H_baza;
+            const arkalikT = inp.arkalikT;
+            const cekmeceTabanT = inp.cekmeceTabanT !== undefined ? inp.cekmeceTabanT : DOLAP_CONFIG.cekmeceTabanKalinligi;
+
+            const kapakTipi = inp.kapakTipi;
+            const kanatSayisi = inp.kanatSayisi;
+            const bolmeSayisi = inp.bolmeSayisi;
+
+            const yuklukVar = inp.yuklukVar;
+            const H_yukluk = yuklukVar ? inp.H_yukluk : 0.0;
+
+            const supurgeVar = inp.supurgeVar;
+            const W_supurge = supurgeVar ? inp.W_supurge : 0.0;
+
+            const cekmeceKonum = inp.cekmeceKonum;
+            const cekmeceAdet = inp.cekmeceAdet;
+            const rayBoyu = inp.rayBoyu;
+            const rayYanBosluk = inp.rayYanBosluk;
+            const kutuH = inp.kutuH;
+            const cekmeceToplamH = inp.cekmeceToplamH;
+            const sigCekmece = inp.sigCekmece;
+
+            const surguProfili = inp.surguProfili || {
+                rafOnBosluk: DOLAP_CONFIG.rafOnBosluk.surguVarsayilan,
+                yukseklikPayi: 40.0,
+                kapakBindirme: 30.0
+            };
+
+            const hatalar = [];
+            const uyarilar = [];
+
+            // 1. Kasa Gövde ve Net İç Ölçüler
+            // Dış derinlik (D) gerçek bitmiş dış ölçüdür. Arkalık arkadan bindirme çakıldığı için
+            // gövde panelinin bitmiş derinliği: D - arkalikT olmalıdır.
+            const D_govde = D - arkalikT;
+            const D_kesim = D_govde - b;
+
+            const W_ic = W - (2 * t);
+            const H_ic = H - H_baza - (2 * t);
+            const D_ic = D_govde;
+
+            // Raf derinlik payı (P2: magic number temizlendi)
+            let rafOnBosluk = 0.0;
+            if (kapakTipi === '1') {
+                rafOnBosluk = DOLAP_CONFIG.rafOnBosluk.menteseli;
+            } else if (kapakTipi === '2') {
+                rafOnBosluk = surguProfili.rafOnBosluk;
+            } else {
+                rafOnBosluk = DOLAP_CONFIG.rafOnBosluk.acik;
+            }
+            const D_raf = D_ic - rafOnBosluk;
+            const D_raf_kesim = D_raf - b;
+
+            // Süpürge ve Bölme Genişlikleri
+            let calismaGenisligi = W_ic;
+            if (supurgeVar) {
+                calismaGenisligi -= (W_supurge + t);
+            }
+            const ortaDikmeAdedi = bolmeSayisi - 1;
+            const W_bolme = (calismaGenisligi - (ortaDikmeAdedi * t)) / bolmeSayisi;
+            const H_calisma = H_ic - (yuklukVar ? (H_yukluk + t) : 0.0);
+
+            // 2. Geometrik / Fiziksel İmkânsızlık Kontrolleri (ERROR)
+            if (W <= (2 * t)) {
+                hatalar.push(`Dış genişlik (${W} mm) yan panelleri (${(2 * t).toFixed(1)} mm) karşılamıyor; net iç genişlik (${W_ic.toFixed(1)} mm) geçersiz.`);
+            }
+            if (H <= H_baza + (2 * t)) {
+                hatalar.push(`Dış yükseklik (${H} mm) baza ve alt/üst panelleri karşılamıyor; net iç yükseklik (${H_ic.toFixed(1)} mm) geçersiz.`);
+            }
+            if (D <= arkalikT) {
+                hatalar.push(`Dış derinlik (${D} mm) arkalık kalınlığından (${arkalikT} mm) büyük olmalıdır.`);
+            }
+            if (D_raf <= 0) {
+                hatalar.push(`Hesaplanan raf derinliği (${D_raf.toFixed(1)} mm) sıfır veya negatif.`);
+            }
+            if (D_kesim <= 0) {
+                hatalar.push(`Gövde kesim derinliği (${D_kesim.toFixed(1)} mm) sıfır veya negatif.`);
+            }
+
+            if (supurgeVar) {
+                if (W_supurge <= 0) {
+                    hatalar.push(`Süpürge koridor genişliği (${W_supurge} mm) pozitif olmalıdır.`);
+                }
+                if (W_supurge >= (W_ic - t)) {
+                    hatalar.push(`Süpürge koridor genişliği (${W_supurge} mm) dolap iç alanını (${W_ic.toFixed(1)} mm) tüketiyor.`);
+                }
+            }
+
+            if (W_bolme <= 0) {
+                hatalar.push(`Bölme net iç genişliği (${W_bolme.toFixed(1)} mm) sıfır veya negatif. Dolap genişliğini artırın veya bölme sayısını azaltın.`);
+            }
+
+            if (yuklukVar) {
+                if (H_yukluk <= 0) {
+                    hatalar.push(`Yüklük yüksekliği (${H_yukluk} mm) pozitif olmalıdır.`);
+                }
+                if (H_yukluk >= (H_ic - t)) {
+                    hatalar.push(`Yüklük yüksekliği (${H_yukluk} mm) dolap net yüksekliğini (${H_ic.toFixed(1)} mm) aşıyor.`);
+                }
+            }
+
+            if (H_calisma <= 0) {
+                hatalar.push(`Yüklük sonrası kalan ana çalışma yüksekliği (${H_calisma.toFixed(1)} mm) geçersiz.`);
+            }
+
+            // P1-6: Sürgü profil validation
+            let isIcCekmece = false;
+            let surguAciklikH = H_ic;
+            if (kapakTipi === '2') {
+                if (surguProfili.rafOnBosluk < 0) {
+                    hatalar.push(`Sürgü rayı raf ön payı (${surguProfili.rafOnBosluk} mm) negatif olamaz.`);
+                }
+                if (surguProfili.yukseklikPayi < 0) {
+                    hatalar.push(`Sürgü mekanizması yükseklik payı (${surguProfili.yukseklikPayi} mm) negatif olamaz.`);
+                }
+                if (surguProfili.kapakBindirme < 0) {
+                    hatalar.push(`Sürgü kapak bindirme payı (${surguProfili.kapakBindirme} mm) negatif olamaz.`);
+                }
+
+                if (cekmeceKonum === 'tam') {
+                    surguAciklikH = H_ic - (cekmeceToplamH + t);
+                }
+                const kayarH = surguAciklikH - surguProfili.yukseklikPayi;
+                const kayarWAciklik = supurgeVar ? calismaGenisligi : W_ic;
+                const kayarW = (kayarWAciklik + surguProfili.kapakBindirme) / 2.0;
+
+                if (surguAciklikH <= surguProfili.yukseklikPayi || kayarH <= 0 || kayarH < 200) {
+                    hatalar.push(`Sürgü kapak net yüksekliği (${kayarH.toFixed(1)} mm) uygulanamayacak kadar kısa veya negatif. Sürgü yükseklik payı (${surguProfili.yukseklikPayi} mm) sürgü açıklığından (${surguAciklikH.toFixed(1)} mm) küçük olmalıdır.`);
+                }
+                if (kayarW <= 0 || kayarW < 200) {
+                    hatalar.push(`Sürgü kapak kesim genişliği (${kayarW.toFixed(1)} mm) geçersiz veya uygulanamayacak kadar dar.`);
+                }
+            }
+
+            // P1-2 & P1-5: Çekmece kontrolleri
+            let cekmeceBoslukW = 0.0;
+            let kutuDisW = 0.0;
+            let kutuIcW = 0.0;
+            let drawerPitch = 0.0;
+            let kullanilabilirCekmeceDerinligi = 0.0;
+
+            if (cekmeceKonum !== 'yok') {
+                if (cekmeceKonum.startsWith('bolme')) {
+                    const bNum = parseInt(cekmeceKonum.replace('bolme', ''), 10);
+                    if (bNum > bolmeSayisi || bNum < 1) {
+                        hatalar.push(`Seçilen çekmece konumu (${bNum}. Bölme) mevcut bölme sayısını (${bolmeSayisi}) aşıyor.`);
+                    }
+                    if (kapakTipi === '2') {
+                        isIcCekmece = true; // Sürgü kapak arkasında iç çekmece
+                    }
+                }
+
+                const modulToplamH = cekmeceToplamH + t;
+                if (cekmeceToplamH <= 0) {
+                    hatalar.push(`Çekmece toplam cephe yüksekliği (${cekmeceToplamH} mm) pozitif olmalıdır.`);
+                }
+                if (modulToplamH >= H_calisma) {
+                    hatalar.push(`Çekmece modülü toplam yüksekliği (${cekmeceToplamH} mm cephe + ${t} mm tabla = ${modulToplamH} mm), kullanılabilir dolap yüksekliğini (${H_calisma.toFixed(1)} mm) aşıyor! Çekmece toplam H değerini küçültün.`);
+                }
+
+                // P1-5: Dikey pitch ve kutu montaj payı kontrolü
+                drawerPitch = (cekmeceToplamH - ((cekmeceAdet - 1) * DOLAP_CONFIG.fuga)) / cekmeceAdet;
+                for (let i = 0; i < cekmeceAdet; i++) {
+                    const hKutu = (i === 0 && sigCekmece) ? 85.0 : kutuH;
+                    if (hKutu + DOLAP_CONFIG.cekmeceUstAltCalismaBosluk > drawerPitch) {
+                        hatalar.push(`Çekmece kutu yüksekliği (${hKutu} mm) + montaj çalışma boşluğu (${DOLAP_CONFIG.cekmeceUstAltCalismaBosluk} mm), çekmece başına düşen net dikey mesafeyi (${drawerPitch.toFixed(1)} mm) aşıyor! Kutu yüksekliğini küçültün veya çekmece toplam yüksekliğini artırın.`);
+                        break;
+                    }
+                    if (hKutu <= 0) {
+                        hatalar.push(`Çekmece kutu yüksekliği (${hKutu} mm) pozitif olmalıdır.`);
+                        break;
+                    }
+                }
+
+                // Teleskopik ray ve derinlik kontrolü
+                // Sürgü kapak arkasında iç çekmece ise sürgü ray payını da düş
+                const surguRayOnPayi = (kapakTipi === '2' && isIcCekmece) ? surguProfili.rafOnBosluk : 0.0;
+                kullanilabilirCekmeceDerinligi = D_ic - surguRayOnPayi - DOLAP_CONFIG.kutuArkaBosluk;
+                if (rayBoyu > kullanilabilirCekmeceDerinligi) {
+                    const uygunRaylar = [500, 450, 400, 350, 300, 250];
+                    const maxUygun = uygunRaylar.find(r => r <= kullanilabilirCekmeceDerinligi) || 0;
+                    hatalar.push(`HATA: Seçilen teleskopik ray boyu (${rayBoyu} mm), kullanılabilir çekmece derinliğinden (${kullanilabilirCekmeceDerinligi.toFixed(0)} mm) uzundur! Ray arkadan taşar. Bu derinlik için maksimum uygun ray boyu: ${maxUygun > 0 ? maxUygun + ' mm' : 'Yok (dolap derinliğini artırın)'}.`);
+                }
+
+                const genisModul = (cekmeceKonum === 'tam');
+                cekmeceBoslukW = genisModul ? calismaGenisligi : W_bolme;
+                kutuDisW = cekmeceBoslukW - (2 * rayYanBosluk);
+                kutuIcW = kutuDisW - (2 * t);
+
+                if (kutuIcW <= 0) {
+                    hatalar.push(`Çekmece kutusu net iç genişliği (${kutuIcW.toFixed(1)} mm) sıfır veya negatif. Ray montaj boşluğunu veya bölme genişliğini kontrol edin.`);
+                }
+            }
+
+            // P2: Ergonomik ve Tasarım Uyarıları (Modeli bloke etmez, kesim listesi üretilir)
+            if (W_ic > 0 && W_ic < 250) {
+                uyarilar.push(`Dolap iç genişliği (${W_ic.toFixed(1)} mm) standart gardırop için dardır.`);
+            }
+            if (H_ic > 0 && H_ic < 500) {
+                uyarilar.push(`Dolap iç yüksekliği (${H_ic.toFixed(1)} mm) standart kullanım için düşüktür.`);
+            }
+            if (D_raf > 0 && D_raf < 150) {
+                uyarilar.push(`Raf derinliği (${D_raf.toFixed(1)} mm) oldukça sığdır; depolama kapasitesi kısıtlı olabilir.`);
+            }
+            if (W_bolme > 0 && W_bolme < 180) {
+                uyarilar.push(`Bölme net iç genişliği (${W_bolme.toFixed(1)} mm) standart askı/raf kullanımı için dardır.`);
+            }
+            if (supurgeVar && W_supurge > 0 && W_supurge < 150) {
+                uyarilar.push(`Süpürge koridor genişliği (${W_supurge} mm) süpürge hortumu veya ütü masası için dar olabilir.`);
+            }
+            if (yuklukVar && H_yukluk > 0 && H_yukluk < 250) {
+                uyarilar.push(`Yüklük katı yüksekliği (${H_yukluk} mm) standart büyük valizler için basık kalabilir.`);
+            }
+            if (H_calisma > 0 && H_calisma < 500 && !hatalar.length) {
+                uyarilar.push(`Ana dolap asma/raf kullanım yüksekliği (${H_calisma.toFixed(1)} mm) oldukça basıktır.`);
+            }
+            if (cekmeceKonum !== 'yok' && kutuIcW > 0 && kutuIcW < 120) {
+                uyarilar.push(`Çekmece kutusu iç genişliği (${kutuIcW.toFixed(1)} mm) oldukça dardır.`);
+            }
+
+            // Hata varsa kesim üretmeden dön
+            if (hatalar.length > 0) {
+                return {
+                    gecerli: false,
+                    hatalar,
+                    uyarilar,
+                    kasa: { W, H, D, H_baza, t, b, arkalikT, cekmeceTabanT, D_govde, D_kesim, W_ic, H_ic, D_ic },
+                    kesimler: [],
+                    vidalar: [],
+                    nalburiye: [],
+                    svgData: null
+                };
+            }
+
+            // 3. P1-3: Tek Gerçek Kaynak - Facade Zones Modeli
+            const H_cephe = H - H_baza;
+            const H_net_cephe = H_cephe - DOLAP_CONFIG.fugaUst - DOLAP_CONFIG.fugaAlt;
+            const facadeZones = [];
+
+            let X_main_start = DOLAP_CONFIG.fugaSol;
+            if (supurgeVar) {
+                const supurgeFacadeW = (t + W_supurge + (t / 2)) - DOLAP_CONFIG.fugaSol - (DOLAP_CONFIG.fuga / 2);
+                facadeZones.push({
+                    id: 'supurge',
+                    tip: 'supurge',
+                    bolmeNo: null,
+                    x: DOLAP_CONFIG.fugaSol,
+                    y: DOLAP_CONFIG.fugaUst,
+                    w: supurgeFacadeW,
+                    h: H_net_cephe,
+                    hasCekmece: false,
+                    isIcCekmece: false
+                });
+                X_main_start = (t + W_supurge + (t / 2)) + (DOLAP_CONFIG.fuga / 2);
+            }
+
+            const W_main_facade = (W - DOLAP_CONFIG.fugaSag) - X_main_start;
+            const W_zone_bolme = (W_main_facade - ((bolmeSayisi - 1) * DOLAP_CONFIG.fuga)) / bolmeSayisi;
+
+            if (cekmeceKonum === 'tam') {
+                const drawerY = DOLAP_CONFIG.fugaUst + H_net_cephe - cekmeceToplamH;
+                facadeZones.push({
+                    id: 'tam_cekmece',
+                    tip: 'tam_cekmece',
+                    bolmeNo: null,
+                    x: X_main_start,
+                    y: drawerY,
+                    w: W_main_facade,
+                    h: cekmeceToplamH,
+                    hasCekmece: true,
+                    isIcCekmece: false
+                });
+                const upperH = H_net_cephe - cekmeceToplamH - DOLAP_CONFIG.fuga;
+                facadeZones.push({
+                    id: 'tam_ust',
+                    tip: 'tam_ust',
+                    bolmeNo: null,
+                    x: X_main_start,
+                    y: DOLAP_CONFIG.fugaUst,
+                    w: W_main_facade,
+                    h: upperH,
+                    hasCekmece: false,
+                    isIcCekmece: false
+                });
+            } else {
+                for (let i = 0; i < bolmeSayisi; i++) {
+                    const bNo = i + 1;
+                    const zX = X_main_start + i * (W_zone_bolme + DOLAP_CONFIG.fuga);
+                    const hasCek = (cekmeceKonum === `bolme${bNo}`);
+
+                    if (hasCek && !isIcCekmece) {
+                        const drawerY = DOLAP_CONFIG.fugaUst + H_net_cephe - cekmeceToplamH;
+                        facadeZones.push({
+                            id: `bolme_${bNo}_cekmece`,
+                            tip: 'bolme_cekmece',
+                            bolmeNo: bNo,
+                            x: zX,
+                            y: drawerY,
+                            w: W_zone_bolme,
+                            h: cekmeceToplamH,
+                            hasCekmece: true,
+                            isIcCekmece: false
+                        });
+                        const upperH = H_net_cephe - cekmeceToplamH - DOLAP_CONFIG.fuga;
+                        facadeZones.push({
+                            id: `bolme_${bNo}_ust`,
+                            tip: 'bolme_ust',
+                            bolmeNo: bNo,
+                            x: zX,
+                            y: DOLAP_CONFIG.fugaUst,
+                            w: W_zone_bolme,
+                            h: upperH,
+                            hasCekmece: false,
+                            isIcCekmece: false
+                        });
+                    } else {
+                        facadeZones.push({
+                            id: `bolme_${bNo}`,
+                            tip: 'bolme_tam',
+                            bolmeNo: bNo,
+                            x: zX,
+                            y: DOLAP_CONFIG.fugaUst,
+                            w: W_zone_bolme,
+                            h: H_net_cephe,
+                            hasCekmece: hasCek,
+                            isIcCekmece: isIcCekmece && hasCek
+                        });
+                    }
+                }
+            }
+
+            // 4. Kesim Listesi ve Nalburiye
+            const kesimler = [];
+            const vidalar = [];
+            const nalburiye = [];
+
+            // A. Kasa Gövdesi
+            kesimler.push({
+                ad: "Kasa Yan Dikmeler",
+                adet: 2,
+                kesimBoy: H,
+                kesimEn: Number(D_kesim.toFixed(1)),
+                bant: "1 Boy (Ön)",
+                bolum: "Gövde"
+            });
+
+            kesimler.push({
+                ad: "Kasa Alt / Üst Tabla",
+                adet: 2,
+                kesimBoy: Number(W_ic.toFixed(1)),
+                kesimEn: Number(D_kesim.toFixed(1)),
+                bant: "1 Boy (Ön)",
+                bolum: "Gövde"
+            });
+
+            if (H_baza > 0) {
+                kesimler.push({
+                    ad: "Baza Ön/Arka Kayıt",
+                    adet: 2,
+                    kesimBoy: Number(W_ic.toFixed(1)),
+                    kesimEn: H_baza,
+                    bant: "Bantsız",
+                    bolum: "Baza"
+                });
+            }
+
+            const arkalikBoy = H - (2 * DOLAP_CONFIG.arkalikCevrePayi);
+            const arkalikEn = W - (2 * DOLAP_CONFIG.arkalikCevrePayi);
+            kesimler.push({
+                ad: `Arkalık Paneli (${arkalikT}mm)`,
+                adet: 1,
+                kesimBoy: Number(arkalikBoy.toFixed(1)),
+                kesimEn: Number(arkalikEn.toFixed(1)),
+                bant: "Bantsız",
+                bolum: "Arkalık"
+            });
+
+            // B. İç Mimari
+            if (yuklukVar) {
+                kesimler.push({
+                    ad: "Yüklük Boydan Rafı",
+                    adet: 1,
+                    kesimBoy: Number(W_ic.toFixed(1)),
+                    kesimEn: Number(D_raf_kesim.toFixed(1)),
+                    bant: "1 Boy (Ön)",
+                    bolum: "Yüklük Katı"
+                });
+            }
+
+            if (supurgeVar) {
+                kesimler.push({
+                    ad: "Süpürge Koridoru Dikey Dikmesi",
+                    adet: 1,
+                    kesimBoy: Number(H_calisma.toFixed(1)),
+                    kesimEn: Number(D_raf_kesim.toFixed(1)),
+                    bant: "1 Boy (Ön)",
+                    bolum: "Süpürge Koridoru"
+                });
+            }
+
+            let ortaDikmeH = H_calisma;
+            if (cekmeceKonum === 'tam') {
+                ortaDikmeH = H_calisma - (cekmeceToplamH + t);
+            }
+
+            if (ortaDikmeAdedi > 0) {
+                kesimler.push({
+                    ad: (cekmeceKonum === 'tam') ? "Orta Dikey Dikmeler (Çekmece Üstü)" : "Orta Dikey Dikmeler",
+                    adet: ortaDikmeAdedi,
+                    kesimBoy: Number(ortaDikmeH.toFixed(1)),
+                    kesimEn: Number(D_raf_kesim.toFixed(1)),
+                    bant: "1 Boy (Ön)",
+                    bolum: "İç Gövde"
+                });
+            }
+
+            let toplamSabitRaf = 0;
+            for (let i = 0; i < bolmeSayisi; i++) {
+                const bAyar = (inp.bolmeAyarlari && inp.bolmeAyarlari[i]) || { rafSayisi: 2, askilik: '0' };
+                if (bAyar.rafSayisi > 0) {
+                    toplamSabitRaf += bAyar.rafSayisi;
+                    kesimler.push({
+                        ad: `Sabit Raf (Bölme ${i + 1})`,
+                        adet: bAyar.rafSayisi,
+                        kesimBoy: Number(W_bolme.toFixed(1)),
+                        kesimEn: Number(D_raf_kesim.toFixed(1)),
+                        bant: "1 Boy (Ön)",
+                        bolum: `Bölüm #${i + 1}`
+                    });
+                }
+
+                if (bAyar.askilik === '1') {
+                    const boruBoyu = Math.round(W_bolme - 5);
+                    nalburiye.push(`1 Adet ${boruBoyu} mm Gardırop Borusu + 2 Flanş (Bölme ${i + 1})`);
+                } else if (bAyar.askilik === '2') {
+                    const boruBoyu = Math.round(W_bolme - 5);
+                    nalburiye.push(`2 Adet ${boruBoyu} mm Çift Kat Boru + 4 Flanş (Bölme ${i + 1})`);
+                }
+            }
+
+            // C. Çekmece Modülü
+            let klapaBitmisH = 0.0;
+            let klapaBitmisW = 0.0;
+            let cekmeceModulVerisi = null;
+            const klapalarListesi = [];
+
+            if (cekmeceKonum !== 'yok') {
+                // Çekmece Üstü Sabit Ara Tabla
+                kesimler.push({
+                    ad: isIcCekmece ? `İç Çekmece Üstü Sabit Ara Tabla (Bölme ${cekmeceKonum.replace('bolme', '')})` : "Çekmece Üstü Sabit Ara Tabla",
+                    adet: 1,
+                    kesimBoy: Number(cekmeceBoslukW.toFixed(1)),
+                    kesimEn: Number(D_raf_kesim.toFixed(1)),
+                    bant: "1 Boy (Ön)",
+                    bolum: (cekmeceKonum === 'tam') ? "Çekmece Modülü (Boydan)" : `Bölüm #${cekmeceKonum.replace('bolme', '')}`
+                });
+
+                nalburiye.push(`${cekmeceAdet} Takım ${rayBoyu} mm Teleskopik Bilyalı Ray (Yan montaj boşluğu: ${rayYanBosluk} mm/yan${isIcCekmece ? ' - İç Çekmece' : ''})`);
+
+                // Kutular
+                for (let i = 0; i < cekmeceAdet; i++) {
+                    const hKutu = (i === 0 && sigCekmece) ? 85.0 : kutuH;
+                    kesimler.push({
+                        ad: `Çekmece ${i + 1} Yanlar`,
+                        adet: 2,
+                        kesimBoy: rayBoyu,
+                        kesimEn: Number((hKutu - b).toFixed(1)),
+                        bant: "1 Boy (Üst)",
+                        bolum: "Çekmece Kutusu"
+                    });
+                    kesimler.push({
+                        ad: isIcCekmece ? `Çekmece ${i + 1} Ön/Arka (İç Çekmece)` : `Çekmece ${i + 1} Ön/Arka`,
+                        adet: 2,
+                        kesimBoy: Number(kutuIcW.toFixed(1)),
+                        kesimEn: Number((hKutu - b).toFixed(1)),
+                        bant: "1 Boy (Üst)",
+                        bolum: "Çekmece Kutusu"
+                    });
+                    kesimler.push({
+                        ad: `Çekmece ${i + 1} Tabanı (${cekmeceTabanT}mm)`,
+                        adet: 1,
+                        kesimBoy: Number(kutuDisW.toFixed(1)),
+                        kesimEn: rayBoyu,
+                        bant: "Bantsız",
+                        bolum: "Çekmece Tabanı"
+                    });
+                }
+
+                // Dış Klapalar (Yalnızca dış çekmece ise kesim listesine eklenir - P1-2)
+                if (!isIcCekmece) {
+                    const drawerZone = facadeZones.find(z => z.tip === 'tam_cekmece' || z.tip === 'bolme_cekmece');
+                    if (drawerZone) {
+                        klapaBitmisW = drawerZone.w;
+                        klapaBitmisH = (cekmeceToplamH - ((cekmeceAdet - 1) * DOLAP_CONFIG.fuga)) / cekmeceAdet;
+
+                        kesimler.push({
+                            ad: (cekmeceKonum === 'tam') ? "Çekmece Dış Klapaları (Boydan)" : `Çekmece Dış Klapaları (Bölme ${cekmeceKonum.replace('bolme', '')})`,
+                            adet: cekmeceAdet,
+                            kesimBoy: Number((klapaBitmisH - (2 * b)).toFixed(1)),
+                            kesimEn: Number((klapaBitmisW - (2 * b)).toFixed(1)),
+                            bant: "4 Kenar Çevre",
+                            bolum: "Dış Yüzey"
+                        });
+
+                        for (let c = 0; c < cekmeceAdet; c++) {
+                            klapalarListesi.push({
+                                ad: `Klapa ${c + 1}`,
+                                x: drawerZone.x,
+                                y: drawerZone.y + c * (klapaBitmisH + DOLAP_CONFIG.fuga),
+                                w: klapaBitmisW,
+                                h: klapaBitmisH
+                            });
+                        }
+                    }
+                }
+
+                cekmeceModulVerisi = {
+                    konum: cekmeceKonum,
+                    adet: cekmeceAdet,
+                    toplamH: cekmeceToplamH,
+                    kutuH,
+                    sigCekmece,
+                    kutuDisW,
+                    kutuIcW,
+                    klapaBitmisH,
+                    klapaBitmisW,
+                    boslukW: cekmeceBoslukW,
+                    isIcCekmece,
+                    klapalar: klapalarListesi
+                };
+            }
+
+            // D. Kapak Modelleri & Kesimleri (P1-1)
+            const kapakModelleri = [];
+
+            if (kapakTipi === '1') { // Menteşeli Kapak
+                // Süpürge koridoru kapağı
+                if (supurgeVar) {
+                    const supurgeZone = facadeZones.find(z => z.tip === 'supurge');
+                    if (supurgeZone) {
+                        kesimler.push({
+                            ad: "Süpürge Koridoru Kapağı",
+                            adet: 1,
+                            kesimBoy: Number((supurgeZone.h - (2 * b)).toFixed(1)),
+                            kesimEn: Number((supurgeZone.w - (2 * b)).toFixed(1)),
+                            bant: "4 Kenar Çevre",
+                            bolum: "Dış Kapak"
+                        });
+                        kapakModelleri.push({
+                            ad: "Süpürge Kapağı",
+                            x: supurgeZone.x,
+                            y: supurgeZone.y,
+                            w: supurgeZone.w,
+                            h: supurgeZone.h,
+                            bolmeNo: 'supurge'
+                        });
+                    }
+                }
+
+                if (cekmeceKonum === 'tam') {
+                    // Boydan boya çekmece üstü kapaklar
+                    const upperZone = facadeZones.find(z => z.tip === 'tam_ust');
+                    const kapakH = upperZone.h;
+                    const kapakW = (upperZone.w - ((kanatSayisi - 1) * DOLAP_CONFIG.fuga)) / kanatSayisi;
+
+                    kesimler.push({
+                        ad: "Menteşeli Üst Kapak Kanadı",
+                        adet: kanatSayisi,
+                        kesimBoy: Number((kapakH - (2 * b)).toFixed(1)),
+                        kesimEn: Number((kapakW - (2 * b)).toFixed(1)),
+                        bant: "4 Kenar Çevre",
+                        bolum: "Dış Kapak"
+                    });
+
+                    for (let k = 0; k < kanatSayisi; k++) {
+                        kapakModelleri.push({
+                            ad: `Kapak ${k + 1} (Üst)`,
+                            w: kapakW,
+                            h: kapakH,
+                            y: upperZone.y,
+                            x: upperZone.x + k * (kapakW + DOLAP_CONFIG.fuga)
+                        });
+                    }
+                } else {
+                    // Bölme bazlı ön yüz kapakları (P1-1: kanatSayisi dağıtımı)
+                    const doorZones = facadeZones.filter(z => z.tip === 'bolme_ust' || z.tip === 'bolme_tam');
+
+                    // Kanat / Bölme sayısı kombinasyon kontrolü ve dağıtım
+                    if (bolmeSayisi === 2 && kanatSayisi === 3) {
+                        uyarilar.push("2 bölmeli dolapta 3 kapak seçimi: Orta kapağın menteşe ekseni iç dikmeyle simetrik hizalanmaz; 1 bölmeye çift kanat, diğerine tek kanat uygulanmıştır.");
+                    } else if (bolmeSayisi === 3 && kanatSayisi === 2) {
+                        uyarilar.push("3 bölmeli dolapta 2 kapak seçimi: Kapak birleşim yerleri iç dikmelerle örtüşmez.");
+                    }
+
+                    if (kanatSayisi < bolmeSayisi) {
+                        // Kanat sayısı bölme sayısından azsa eşit genişlikte kanatlar tüm cepheye yayılır
+                        const leafW = (W_main_facade - ((kanatSayisi - 1) * DOLAP_CONFIG.fuga)) / kanatSayisi;
+                        const leafH = H_net_cephe;
+                        kesimler.push({
+                            ad: "Menteşeli Kapak Kanadı",
+                            adet: kanatSayisi,
+                            kesimBoy: Number((leafH - (2 * b)).toFixed(1)),
+                            kesimEn: Number((leafW - (2 * b)).toFixed(1)),
+                            bant: "4 Kenar Çevre",
+                            bolum: "Dış Kapak"
+                        });
+                        for (let k = 0; k < kanatSayisi; k++) {
+                            kapakModelleri.push({
+                                ad: `Kapak ${k + 1}`,
+                                x: X_main_start + k * (leafW + DOLAP_CONFIG.fuga),
+                                y: DOLAP_CONFIG.fugaUst,
+                                w: leafW,
+                                h: leafH
+                            });
+                        }
+                    } else {
+                        // kanatSayisi >= bolmeSayisi
+                        let leafCounts = [];
+                        if (kanatSayisi === bolmeSayisi) {
+                            leafCounts = Array(bolmeSayisi).fill(1);
+                        } else if (kanatSayisi === 2 * bolmeSayisi) {
+                            leafCounts = Array(bolmeSayisi).fill(2);
+                        } else if (bolmeSayisi === 1) {
+                            leafCounts = [kanatSayisi];
+                        } else {
+                            const base = Math.floor(kanatSayisi / bolmeSayisi);
+                            const rem = kanatSayisi % bolmeSayisi;
+                            leafCounts = Array(bolmeSayisi).fill(base);
+                            for (let r = 0; r < rem; r++) leafCounts[r] += 1;
+                        }
+
+                        doorZones.forEach((dz, idx) => {
+                            const cCount = leafCounts[idx];
+                            const leafW = (dz.w - ((cCount - 1) * DOLAP_CONFIG.fuga)) / cCount;
+                            const leafH = dz.h;
+
+                            kesimler.push({
+                                ad: `Menteşeli Kapak (Bölüm #${dz.bolmeNo}${dz.tip === 'bolme_ust' ? ' Üstü' : ' Tam Boy'}${cCount > 1 ? ' - Çift Kanat' : ''})`,
+                                adet: cCount,
+                                kesimBoy: Number((leafH - (2 * b)).toFixed(1)),
+                                kesimEn: Number((leafW - (2 * b)).toFixed(1)),
+                                bant: "4 Kenar Çevre",
+                                bolum: "Dış Kapak"
+                            });
+
+                            for (let j = 0; j < cCount; j++) {
+                                kapakModelleri.push({
+                                    ad: `Kapak #${dz.bolmeNo}${cCount > 1 ? '.' + (j + 1) : (dz.tip === 'bolme_ust' ? ' (Üst)' : ' (Tam)')}`,
+                                    x: dz.x + j * (leafW + DOLAP_CONFIG.fuga),
+                                    y: dz.y,
+                                    w: leafW,
+                                    h: leafH,
+                                    bolmeNo: dz.bolmeNo
+                                });
+                            }
+                        });
+                    }
+                }
+
+                // Geniş kapak uyarısı
+                kapakModelleri.forEach(km => {
+                    if (km.w > DOLAP_CONFIG.menteseEsikleri.maxGenislik) {
+                        uyarilar.push(`Kapak genişliği (${km.w.toFixed(0)} mm) 600 mm'nin üzerindedir. Geniş suntalam kapaklar zamanla sarkma ve bel verme yapabilir; kanat sayısını artırınız.`);
+                    }
+                });
+
+                // Menteşe Adedi & Bindirme Tipi Analizi
+                let toplamMenteseAdet = 0;
+                kapakModelleri.forEach(km => {
+                    const alanM2 = (km.w * km.h) / 1e6;
+                    const agirlikKg = alanM2 * (t / 1000) * DOLAP_CONFIG.suntalamYogunluk;
+                    let mAdet = 3;
+                    if (km.h < DOLAP_CONFIG.menteseEsikleri.hKucuk) mAdet = 2;
+                    else if (km.h <= DOLAP_CONFIG.menteseEsikleri.hOrta) mAdet = 3;
+                    else if (km.h <= DOLAP_CONFIG.menteseEsikleri.hBuyuk) mAdet = 4;
+                    else mAdet = 5;
+
+                    if (agirlikKg > 15 && mAdet < 4) mAdet = 4;
+                    if (agirlikKg > 20 && mAdet < 5) mAdet = 5;
+                    if (km.w > 600) mAdet += 1;
+
+                    toplamMenteseAdet += mAdet;
+                });
+
+                nalburiye.push(`Tahmini menteşe ihtiyacı: ${toplamMenteseAdet} Adet 35 mm Tas Menteşe + Taban Sacı. Nihai menteşe sayısı ve tipi kullanılan üreticinin taşıma/bindirme tablosuna göre doğrulanmalıdır (Dış dikmeler için düz/tam bini, ortak orta dikmeye binen kapaklar için yarım deveboynu menteşe tercih edilmelidir).`);
+
+                const menteseVida = toplamMenteseAdet * 4 + 8;
+                vidalar.push(`<strong>${menteseVida} Adet 3.5x18 mm</strong> Tas Menteşe ve Taban Sacı Vidası`);
+
+            } else if (kapakTipi === '2') { // Sürgülü Kapak
+                // Süpürge koridoru varsa kendi menteşeli kapağı olur
+                if (supurgeVar) {
+                    const supurgeZone = facadeZones.find(z => z.tip === 'supurge');
+                    if (supurgeZone) {
+                        kesimler.push({
+                            ad: "Süpürge Koridoru Kapağı",
+                            adet: 1,
+                            kesimBoy: Number((supurgeZone.h - (2 * b)).toFixed(1)),
+                            kesimEn: Number((supurgeZone.w - (2 * b)).toFixed(1)),
+                            bant: "4 Kenar Çevre",
+                            bolum: "Dış Kapak"
+                        });
+                        kapakModelleri.push({
+                            ad: "Süpürge Kapağı",
+                            x: supurgeZone.x,
+                            y: supurgeZone.y,
+                            w: supurgeZone.w,
+                            h: supurgeZone.h,
+                            bolmeNo: 'supurge'
+                        });
+                    }
+                }
+
+                const kayarH = surguAciklikH - surguProfili.yukseklikPayi;
+                const kayarWAciklik = supurgeVar ? calismaGenisligi : W_ic;
+                const kayarW = (kayarWAciklik + surguProfili.kapakBindirme) / 2.0;
+
+                kesimler.push({
+                    ad: "Kayar Kapak Kanadı",
+                    adet: 2,
+                    kesimBoy: Number((kayarH - (2 * b)).toFixed(1)),
+                    kesimEn: Number((kayarW - (2 * b)).toFixed(1)),
+                    bant: "4 Kenar Çevre",
+                    bolum: "Sürgü Kapak"
+                });
+
+                const kayarStartX = supurgeVar ? (t + W_supurge + t) : t;
+                const kayarY = (cekmeceKonum === 'tam') ? (DOLAP_CONFIG.fugaUst) : DOLAP_CONFIG.fugaUst;
+
+                kapakModelleri.push({
+                    ad: "Sürgü Kapak 1 (Ön/Sol)",
+                    x: kayarStartX,
+                    y: kayarY,
+                    w: kayarW,
+                    h: kayarH
+                });
+                kapakModelleri.push({
+                    ad: "Sürgü Kapak 2 (Arka/Sağ)",
+                    x: kayarStartX + kayarWAciklik - kayarW,
+                    y: kayarY,
+                    w: kayarW,
+                    h: kayarH
+                });
+
+                nalburiye.push(`1 Takım (${Math.round(kayarWAciklik)} mm) Alt-Üst Sürgü Ray Profili + 2 Kapaklık Teker Takımı (Profil kesim boyu: ${Math.round(kayarWAciklik)} mm)`);
+            }
+
+            // 5. Vida ve Montaj Donanımları
+            const govdeVidaSayisi = 8 + (H_baza > 0 ? 8 : 0) + (ortaDikmeAdedi * 6) + (toplamSabitRaf * 4) + (yuklukVar ? 4 : 0) + (cekmeceKonum !== 'yok' ? 4 : 0) + (supurgeVar ? 6 : 0) + 12;
+            vidalar.push(`<strong>${govdeVidaSayisi} Adet 4x50 mm</strong> Kasa & Raf Ana Gövde Vidası`);
+
+            if (cekmeceKonum !== 'yok') {
+                const rayVidaSayisi = cekmeceAdet * 8;
+                vidalar.push(`<strong>${rayVidaSayisi + 4} Adet 3.5x18 mm</strong> Teleskopik Ray Kasa Bağlantı Vidası`);
+                if (!isIcCekmece) {
+                    vidalar.push(`<strong>${cekmeceAdet * 4} Adet 3.5x30 mm</strong> Klapa Çekmece İçi Sabitleme Vidası`);
+                }
+                vidalar.push(`<strong>${cekmeceAdet * 8} Adet 3.5x35 mm</strong> Çekmece Kutu Montaj Vidası`);
+            }
+
+            const perimetre = 2 * (W + H);
+            const arkalikVidaSayisi = Math.ceil(perimetre / 150) + 6;
+            vidalar.push(`<strong>${arkalikVidaSayisi} Adet 3.5x20 mm</strong> Geniş Pullu Arkalık Vidası (Maks. 150 mm aralıkla)`);
+            vidalar.push(`<strong>1 Paket (50'li)</strong> Renkli Yapışkanlı Vida Tapası (14 mm)`);
+
+            return {
+                gecerli: true,
+                hatalar,
+                uyarilar,
+                kasa: {
+                    W, H, D, H_baza, t, b, arkalikT, cekmeceTabanT,
+                    D_govde, D_kesim, W_ic, H_ic, D_ic,
+                    D_raf, D_raf_kesim,
+                    H_calisma, calismaGenisligi,
+                    ortaDikmeH, W_bolme
+                },
+                bolmeSayisi,
+                facadeZones,
+                yukluk: { var: yuklukVar, h: H_yukluk },
+                supurge: { var: supurgeVar, w: W_supurge },
+                cekmeceModul: cekmeceModulVerisi,
+                kapaklar: kapakModelleri,
+                kesimler,
+                vidalar,
+                nalburiye
+            };
+        }
+
+        // ==========================================
+        // CANLI GÜNCELLEME VE HESAPLAMA BAŞLATICI
+        // ==========================================
+        function hesapla() {
+            const t = sayiOku('inp_t', 18.0);
+            const b = sayiOku('inp_b', 0.4);
+            const arkalikT = sayiOku('inp_arkalik_t', 3.0);
+            const W = sayiOku('inp_w', 1400.0);
+            const H = sayiOku('inp_h', 2000.0);
+            const D = sayiOku('inp_d', 550.0);
+            const H_baza = sayiOku('inp_baza', 0.0);
+
+            const kapakTipi = document.getElementById('inp_kapak').value;
+            const kanatSayisi = tamsayiOku('inp_kanat', 2);
+            const bolmeSayisi = tamsayiOku('inp_bolme_sayisi', 2);
+
+            const yuklukVar = document.getElementById('chk_yukluk').checked;
+            const H_yukluk = yuklukVar ? sayiOku('inp_yukluk_h', 400.0) : 0.0;
+
+            const supurgeVar = document.getElementById('chk_supurge').checked;
+            const W_supurge = supurgeVar ? sayiOku('inp_supurge_w', 220.0) : 0.0;
+
+            const cekmeceKonum = document.getElementById('inp_cekmece_konum').value;
+            const cekmeceAdet = tamsayiOku('inp_cekmece_adet', 3);
+            const rayBoyu = sayiOku('inp_ray_boyu', 450.0);
+            const rayYanBosluk = sayiOku('inp_ray_yan_bosluk', 13.0);
+            const kutuH = sayiOku('inp_kutu_h', 130.0);
+            const cekmeceToplamH = sayiOku('inp_cekmece_toplam_h', 560.0);
+            const sigCekmece = document.getElementById('chk_sig_cekmece').checked;
+
+            const surguProfili = {
+                rafOnBosluk: sayiOku('inp_surgu_raf_bosluk', DOLAP_CONFIG.rafOnBosluk.surguVarsayilan),
+                yukseklikPayi: sayiOku('inp_surgu_h_payi', 40.0),
+                kapakBindirme: sayiOku('inp_surgu_bindirme', 30.0)
+            };
+
+            const model = hesaplaGeometri({
+                t, b, arkalikT, W, H, D, H_baza,
+                kapakTipi, kanatSayisi, bolmeSayisi,
+                yuklukVar, H_yukluk, supurgeVar, W_supurge,
+                cekmeceKonum, cekmeceAdet, rayBoyu, rayYanBosluk,
+                kutuH, cekmeceToplamH, sigCekmece,
+                surguProfili, bolmeAyarlari
+            });
+
+            const kutuUyarilar = document.getElementById('kutu_uyarilar');
+            kutuUyarilar.innerHTML = '';
+
+            if (!model.gecerli) {
+                kutuUyarilar.classList.remove('hidden');
+                kutuUyarilar.innerHTML = `
+                    <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs space-y-1.5 shadow-sm">
+                        <div class="flex items-center gap-2 font-bold text-rose-900 text-sm">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i>
+                            <span>Fiziksel / Geometrik Hata Tespit Edildi</span>
+                        </div>
+                        <ul class="list-disc list-inside space-y-1 pl-1 font-medium">
+                            ${model.hatalar.map(h => `<li>${h}</li>`).join('')}
+                        </ul>
+                        <p class="pt-1 text-[11px] text-rose-700">Hatalar giderilene kadar kesim ve nalburiye listesi üretilmeyecektir.</p>
+                    </div>
+                `;
+
+                document.getElementById('tablo_kesim_govdesi').innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400 font-medium bg-slate-50/50">
+                            <i class="fa-solid fa-ban text-rose-400 text-lg block mb-1"></i>
+                            Geometrik hata nedeniyle kesim listesi oluşturulamadı. Lütfen yukarıdaki hata uyarılarını düzeltiniz.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('liste_vidalar').innerHTML = `<li class="text-slate-400 text-xs italic">Hata nedeniyle hesaplanamadı</li>`;
+                document.getElementById('liste_nalburiye').innerHTML = `<li class="text-slate-400 text-xs italic">Hata nedeniyle hesaplanamadı</li>`;
+
+                svgHataCiz(W, H);
+                return;
+            }
+
+            if (model.uyarilar && model.uyarilar.length > 0) {
+                kutuUyarilar.classList.remove('hidden');
+                kutuUyarilar.innerHTML = `
+                    <div class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-1.5 shadow-sm">
+                        <div class="flex items-center gap-2 font-bold text-amber-900 text-xs">
+                            <i class="fa-solid fa-circle-exclamation text-amber-600"></i>
+                            <span>Usta / Tasarım Tavsiyeleri</span>
+                        </div>
+                        <ul class="list-disc list-inside space-y-1 pl-1 text-[11px]">
+                            ${model.uyarilar.map(u => `<li>${u}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            } else {
+                kutuUyarilar.classList.add('hidden');
+            }
+
+            tabloyuGuncelle(model.kesimler, b);
+            nalburiyeyiGuncelle(model.vidalar, model.nalburiye);
+            svgDolapCiz(model);
+
+            document.getElementById('etiket_ebat').textContent = `${W} x ${H} x ${D} mm`;
+            document.getElementById('ic_alan_bilgi').textContent = `Net İç: ${Math.round(model.kasa.W_ic)} x ${Math.round(model.kasa.H_ic)} x ${Math.round(model.kasa.D_ic)} mm (Gövde Derinliği: ${Math.round(model.kasa.D_govde)} mm)`;
+            document.getElementById('ozet_bant_kalinligi').textContent = `${b} mm`;
+        }
+
+        function tabloyuGuncelle(kesimler, b) {
+            const tbody = document.getElementById('tablo_kesim_govdesi');
+            tbody.innerHTML = '';
+
+            kesimler.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-4 font-medium text-slate-900">${item.ad}</td>
+                    <td class="py-2.5 px-2 text-center font-mono font-bold text-amber-700 bg-amber-50/50">${item.adet}</td>
+                    <td class="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">${item.kesimBoy.toFixed(1)}</td>
+                    <td class="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">${item.kesimEn.toFixed(1)}</td>
+                    <td class="py-2.5 px-4">
+                        <span class="inline-block px-2 py-0.5 text-[11px] rounded font-medium ${item.bant === 'Bantsız' ? 'bg-slate-100 text-slate-500' : 'bg-amber-100 text-amber-800'}">
+                            ${item.bant}
+                        </span>
+                    </td>
+                    <td class="py-2.5 px-4 text-slate-500 text-[11px]">${item.bolum}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function nalburiyeyiGuncelle(vidalar, nalburiye) {
+            const ulVida = document.getElementById('liste_vidalar');
+            ulVida.innerHTML = vidalar.map(v => `<li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500 text-[10px]"></i> <span>${v}</span></li>`).join('');
+
+            const ulNalbur = document.getElementById('liste_nalburiye');
+            ulNalbur.innerHTML = nalburiye.map(n => `<li class="flex items-center gap-2"><i class="fa-solid fa-box text-amber-500 text-[10px]"></i> <span>${n}</span></li>`).join('');
+        }
+
+        function svgHataCiz(W, H) {
+            const container = document.getElementById('svg_sema_kapsayici');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center p-8 text-center text-slate-400">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-500 text-3xl mb-2"></i>
+                    <span class="text-xs font-semibold text-slate-600">Geometri Çizilemedi</span>
+                    <span class="text-[11px] text-slate-400 mt-1">Lütfen parametreleri ve uyarıları kontrol edin.</span>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // GERÇEK HESAPLAMA MODELİYLE 1:1 SVG ÇİZİMİ
+        // ==========================================
+        function svgDolapCiz(model) {
+            const container = document.getElementById('svg_sema_kapsayici');
+            const svgW = 440;
+            const svgH = 470;
+            const pad = 35;
+
+            const drawW = svgW - (pad * 2);
+            const drawH = svgH - (pad * 2);
+
+            const scaleX = drawW / model.kasa.W;
+            const scaleY = drawH / model.kasa.H;
+            const scale = Math.min(scaleX, scaleY);
+
+            const realDrawW = model.kasa.W * scale;
+            const realDrawH = model.kasa.H * scale;
+
+            const originX = pad + (drawW - realDrawW) / 2;
+            const originY = pad + (drawH - realDrawH) / 2;
+
+            const sT = model.kasa.t * scale;
+            const sBaza = model.kasa.H_baza * scale;
+
+            let elements = [];
+
+            // 1. Arka Fon & Kasa Dış Çerçevesi
+            elements.push(`
+                <rect x="${originX}" y="${originY}" width="${realDrawW}" height="${realDrawH}" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" rx="3" />
+            `);
+
+            // Yan Paneller
+            elements.push(`
+                <rect x="${originX}" y="${originY}" width="${sT}" height="${realDrawH}" fill="#f59e0b" fill-opacity="0.85" stroke="#d97706" stroke-width="0.5" />
+                <rect x="${originX + realDrawW - sT}" y="${originY}" width="${sT}" height="${realDrawH}" fill="#f59e0b" fill-opacity="0.85" stroke="#d97706" stroke-width="0.5" />
+            `);
+
+            // Üst Tavan & Alt Taban
+            elements.push(`
+                <rect x="${originX + sT}" y="${originY}" width="${realDrawW - (2 * sT)}" height="${sT}" fill="#fbbf24" fill-opacity="0.85" stroke="#d97706" stroke-width="0.5" />
+            `);
+
+            const altY = originY + realDrawH - sBaza - sT;
+            elements.push(`
+                <rect x="${originX + sT}" y="${altY}" width="${realDrawW - (2 * sT)}" height="${sT}" fill="#fbbf24" fill-opacity="0.85" stroke="#d97706" stroke-width="0.5" />
+            `);
+
+            // Baza
+            if (model.kasa.H_baza > 0) {
+                elements.push(`
+                    <rect x="${originX + sT}" y="${altY + sT}" width="${realDrawW - (2 * sT)}" height="${sBaza}" fill="#cbd5e1" fill-opacity="0.6" stroke="#94a3b8" stroke-width="0.5" stroke-dasharray="2,2" />
+                    <text x="${originX + realDrawW / 2}" y="${altY + sT + sBaza / 2 + 3}" font-size="9" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono">Baza ${model.kasa.H_baza}mm</text>
+                `);
+            }
+
+            // 2. Yüklük Rafı
+            let icBaslangicY = originY + sT;
+            let icBitisY = altY;
+
+            if (model.yukluk.var) {
+                const sYukH = model.yukluk.h * scale;
+                const yuklukY = icBaslangicY + sYukH;
+                elements.push(`
+                    <rect x="${originX + sT}" y="${yuklukY}" width="${realDrawW - (2 * sT)}" height="${sT}" fill="#e2e8f0" stroke="#64748b" stroke-width="0.5" />
+                    <text x="${originX + realDrawW / 2}" y="${icBaslangicY + sYukH / 2 + 4}" font-size="9" font-weight="600" text-anchor="middle" fill="#475569">YÜKLÜK / VALİZ KATI</text>
+                `);
+                icBaslangicY = yuklukY + sT;
+            }
+
+            // 3. Süpürge Koridoru
+            let icBaslangicX = originX + sT;
+            if (model.supurge.var) {
+                const sSupW = model.supurge.w * scale;
+                elements.push(`
+                    <rect x="${icBaslangicX + sSupW}" y="${icBaslangicY}" width="${sT}" height="${icBitisY - icBaslangicY}" fill="#38bdf8" fill-opacity="0.65" stroke="#0284c7" stroke-width="0.5" />
+                    <text x="${icBaslangicX + sSupW / 2}" y="${icBaslangicY + (icBitisY - icBaslangicY) / 2}" font-size="9" text-anchor="middle" fill="#0369a1" transform="rotate(-90 ${icBaslangicX + sSupW / 2} ${icBaslangicY + (icBitisY - icBaslangicY) / 2})">Süpürge / Ütü Yuvası</text>
+                `);
+                icBaslangicX += (sSupW + sT);
+            }
+
+            // 4. Çekmece & Orta Dikme & Raf Çizimi (Senaryo A & B fiziksel tutarlılığı)
+            const sBolmeW = model.kasa.W_bolme * scale;
+            const hasCekmece = model.cekmeceModul !== null;
+            const isTamCekmece = hasCekmece && model.cekmeceModul.konum === 'tam';
+
+            if (isTamCekmece) {
+                // Senaryo B: Gerçek Boydan Boya Çekmece Modülü
+                const sCekmeceH = model.cekmeceModul.toplamH * scale;
+                const cekmeceY = altY - sCekmeceH;
+                const genisCekmeceW = (originX + realDrawW - sT) - icBaslangicX;
+
+                // Çekmece Üstü Sabit Ara Tabla
+                elements.push(`
+                    <rect x="${icBaslangicX}" y="${cekmeceY - sT}" width="${genisCekmeceW}" height="${sT}" fill="#cbd5e1" stroke="#64748b" stroke-width="0.5" />
+                `);
+
+                // Tek geniş çekmece kutuları (bölünmeden!)
+                const tekCekmeceH = sCekmeceH / model.cekmeceModul.adet;
+                for (let c = 0; c < model.cekmeceModul.adet; c++) {
+                    const curY = cekmeceY + (c * tekCekmeceH);
+                    elements.push(`
+                        <rect x="${icBaslangicX + 2}" y="${curY + 1.5}" width="${genisCekmeceW - 4}" height="${tekCekmeceH - 3}" fill="#f8fafc" stroke="#94a3b8" stroke-width="0.6" rx="1.5" />
+                        <line x1="${icBaslangicX + genisCekmeceW / 2 - 25}" y1="${curY + tekCekmeceH / 2}" x2="${icBaslangicX + genisCekmeceW / 2 + 25}" y2="${curY + tekCekmeceH / 2}" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
+                    `);
+                }
+
+                // Orta dikmeler çekmecenin içinden geçmez! Üst tabladan başlar:
+                for (let i = 1; i < model.bolmeSayisi; i++) {
+                    const bolmeX = icBaslangicX + (i * sBolmeW) + ((i - 1) * sT);
+                    elements.push(`
+                        <rect x="${bolmeX}" y="${icBaslangicY}" width="${sT}" height="${(cekmeceY - sT) - icBaslangicY}" fill="#f59e0b" fill-opacity="0.85" stroke="#d97706" stroke-width="0.5" />
+                    `);
+                }
+
+                // Bölmelerdeki raflar (çekmece üstü ara tabladan yukarısı)
+                for (let i = 0; i < model.bolmeSayisi; i++) {
+                    const bolmeX = icBaslangicX + (i * (sBolmeW + sT));
+                    const bAyar = bolmeAyarlari[i] || { rafSayisi: 2, askilik: '0' };
+                    const netBolmeH = (cekmeceY - sT) - icBaslangicY;
+
+                    if (bAyar.askilik === '1') {
+                        const boruY = icBaslangicY + 38 * scale;
+                        elements.push(`
+                            <line x1="${bolmeX + 3}" y1="${boruY}" x2="${bolmeX + sBolmeW - 3}" y2="${boruY}" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" />
+                            <text x="${bolmeX + sBolmeW / 2}" y="${boruY + 12}" font-size="7.5" text-anchor="middle" fill="#0284c7">Uzun Askılık</text>
+                        `);
+                    } else if (bAyar.askilik === '2') {
+                        const boru1Y = icBaslangicY + 30 * scale;
+                        const boru2Y = icBaslangicY + netBolmeH * 0.52;
+                        elements.push(`
+                            <line x1="${bolmeX + 3}" y1="${boru1Y}" x2="${bolmeX + sBolmeW - 3}" y2="${boru1Y}" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" />
+                            <line x1="${bolmeX + 3}" y1="${boru2Y}" x2="${bolmeX + sBolmeW - 3}" y2="${boru2Y}" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" />
+                            <text x="${bolmeX + sBolmeW / 2}" y="${boru1Y + 10}" font-size="7" text-anchor="middle" fill="#0284c7">Üst Askı</text>
+                            <text x="${bolmeX + sBolmeW / 2}" y="${boru2Y + 10}" font-size="7" text-anchor="middle" fill="#0284c7">Alt Askı</text>
+                        `);
+                    }
+
+                    if (bAyar.rafSayisi > 0) {
+                        const rafAraligi = netBolmeH / (bAyar.rafSayisi + 1);
+                        for (let r = 1; r <= bAyar.rafSayisi; r++) {
+                            const rafY = icBaslangicY + (r * rafAraligi);
+                            elements.push(`
+                                <rect x="${bolmeX}" y="${rafY}" width="${sBolmeW}" height="${sT}" fill="#cbd5e1" stroke="#94a3b8" stroke-width="0.5" />
+                            `);
+                        }
+                    }
+                }
+
+            } else {
+                // Bölme bazlı veya çekmecesiz dolap (Senaryo A)
+                for (let i = 0; i < model.bolmeSayisi; i++) {
+                    const bolmeX = icBaslangicX + (i * (sBolmeW + sT));
+
+                    // Orta dikme
+                    if (i > 0) {
+                        elements.push(`
+                            <rect x="${bolmeX - sT}" y="${icBaslangicY}" width="${sT}" height="${icBitisY - icBaslangicY}" fill="#f59e0b" fill-opacity="0.85" stroke="#d97706" stroke-width="0.5" />
+                        `);
+                    }
+
+                    const bolmedeCekmece = hasCekmece && (model.cekmeceModul.konum === `bolme${i + 1}`);
+                    let bolmeRafAlaniAltY = icBitisY;
+
+                    if (bolmedeCekmece) {
+                        const sCekmeceH = model.cekmeceModul.toplamH * scale;
+                        const cekmeceY = icBitisY - sCekmeceH;
+                        bolmeRafAlaniAltY = cekmeceY - sT;
+
+                        // Çekmece Üstü Sabit Ara Tabla
+                        elements.push(`
+                            <rect x="${bolmeX}" y="${cekmeceY - sT}" width="${sBolmeW}" height="${sT}" fill="#cbd5e1" stroke="#64748b" stroke-width="0.5" />
+                        `);
+
+                        // Çekmeceler
+                        const tekCekmeceH = sCekmeceH / model.cekmeceModul.adet;
+                        for (let c = 0; c < model.cekmeceModul.adet; c++) {
+                            const curY = cekmeceY + (c * tekCekmeceH);
+                            elements.push(`
+                                <rect x="${bolmeX + 2}" y="${curY + 1.5}" width="${sBolmeW - 4}" height="${tekCekmeceH - 3}" fill="#f8fafc" stroke="#94a3b8" stroke-width="0.6" rx="1.5" />
+                                <line x1="${bolmeX + sBolmeW / 2 - 14}" y1="${curY + tekCekmeceH / 2}" x2="${bolmeX + sBolmeW / 2 + 14}" y2="${curY + tekCekmeceH / 2}" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
+                            `);
+                        }
+                    }
+
+                    // Raflar ve Askılıklar
+                    const bAyar = bolmeAyarlari[i] || { rafSayisi: 2, askilik: '0' };
+                    const netBolmeH = bolmeRafAlaniAltY - icBaslangicY;
+
+                    if (bAyar.askilik === '1') {
+                        const boruY = icBaslangicY + 38 * scale;
+                        elements.push(`
+                            <line x1="${bolmeX + 3}" y1="${boruY}" x2="${bolmeX + sBolmeW - 3}" y2="${boruY}" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" />
+                            <text x="${bolmeX + sBolmeW / 2}" y="${boruY + 12}" font-size="7.5" text-anchor="middle" fill="#0284c7">Uzun Askılık</text>
+                        `);
+                    } else if (bAyar.askilik === '2') {
+                        const boru1Y = icBaslangicY + 30 * scale;
+                        const boru2Y = icBaslangicY + netBolmeH * 0.52;
+                        elements.push(`
+                            <line x1="${bolmeX + 3}" y1="${boru1Y}" x2="${bolmeX + sBolmeW - 3}" y2="${boru1Y}" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" />
+                            <line x1="${bolmeX + 3}" y1="${boru2Y}" x2="${bolmeX + sBolmeW - 3}" y2="${boru2Y}" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" />
+                            <text x="${bolmeX + sBolmeW / 2}" y="${boru1Y + 10}" font-size="7" text-anchor="middle" fill="#0284c7">Üst Askı</text>
+                            <text x="${bolmeX + sBolmeW / 2}" y="${boru2Y + 10}" font-size="7" text-anchor="middle" fill="#0284c7">Alt Askı</text>
+                        `);
+                    }
+
+                    if (bAyar.rafSayisi > 0) {
+                        const rafAraligi = netBolmeH / (bAyar.rafSayisi + 1);
+                        for (let r = 1; r <= bAyar.rafSayisi; r++) {
+                            const rafY = icBaslangicY + (r * rafAraligi);
+                            elements.push(`
+                                <rect x="${bolmeX}" y="${rafY}" width="${sBolmeW}" height="${sT}" fill="#cbd5e1" stroke="#94a3b8" stroke-width="0.5" />
+                            `);
+                        }
+                    }
+                }
+            }
+
+            // 5. Kapak ve Klapa Önizlemesi (Model Verisinden 1:1 Çizim - P1-3)
+            const kapakGoster = document.getElementById('chk_kapak_goster')?.checked;
+            if (kapakGoster && document.getElementById('inp_kapak')?.value !== '3') {
+                // Kapaklar model koordinatlarından çizilir
+                if (model.kapaklar && model.kapaklar.length > 0) {
+                    model.kapaklar.forEach(km => {
+                        const kX = originX + km.x * scale;
+                        const kY = originY + km.y * scale;
+                        const kW = km.w * scale;
+                        const kH = km.h * scale;
+                        elements.push(`
+                            <rect x="${kX + 0.5}" y="${kY + 0.5}" width="${kW - 1}" height="${kH - 1}" fill="#3b82f6" fill-opacity="0.25" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="3,3" rx="1.5" />
+                            <text x="${kX + kW / 2}" y="${kY + kH / 2 + 3}" font-size="${kW < 60 ? '7.5' : '9'}" font-weight="700" text-anchor="middle" fill="#1d4ed8">${km.ad}</text>
+                        `);
+                    });
+                }
+
+                // Dış Çekmece Klapaları model koordinatlarından çizilir (İç çekmecede dış klapa çizilmez!)
+                if (model.cekmeceModul && !model.cekmeceModul.isIcCekmece && model.cekmeceModul.klapalar) {
+                    model.cekmeceModul.klapalar.forEach(klp => {
+                        const klpX = originX + klp.x * scale;
+                        const klpY = originY + klp.y * scale;
+                        const klpW = klp.w * scale;
+                        const klpH = klp.h * scale;
+                        elements.push(`
+                            <rect x="${klpX + 0.5}" y="${klpY + 0.5}" width="${klpW - 1}" height="${klpH - 1}" fill="#38bdf8" fill-opacity="0.3" stroke="#0284c7" stroke-width="1" stroke-dasharray="2,2" rx="1" />
+                            <text x="${klpX + klpW / 2}" y="${klpY + klpH / 2 + 3}" font-size="8" font-weight="700" text-anchor="middle" fill="#0369a1">${klp.ad}</text>
+                        `);
+                    });
+                }
+            }
+
+            // 6. Boyutlandırma Çizgileri & Kotlar
+            elements.push(`
+                <line x1="${originX}" y1="${originY - 12}" x2="${originX + realDrawW}" y2="${originY - 12}" stroke="#64748b" stroke-width="1" />
+                <text x="${originX + realDrawW / 2}" y="${originY - 16}" font-size="9" text-anchor="middle" fill="#475569" font-family="JetBrains Mono">${model.kasa.W} mm</text>
+                
+                <line x1="${originX - 12}" y1="${originY}" x2="${originX - 12}" y2="${originY + realDrawH}" stroke="#64748b" stroke-width="1" />
+                <text x="${originX - 16}" y="${originY + realDrawH / 2}" font-size="9" text-anchor="middle" fill="#475569" font-family="JetBrains Mono" transform="rotate(-90 ${originX - 16} ${originY + realDrawH / 2})">${model.kasa.H} mm</text>
+            `);
+
+            const svg = `
+                <svg viewBox="0 0 ${svgW} ${svgH}" class="w-full h-auto max-h-[440px]">
+                    <defs>
+                        <pattern id="diagonalHatch" width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="10" stroke="#e2e8f0" stroke-width="1" />
+                        </pattern>
+                    </defs>
+                    ${elements.join('')}
+                </svg>
+            `;
+
+            container.innerHTML = svg;
+        }
+
+        function panoyaKopyala() {
+            const satirlar = document.querySelectorAll('#tablo_kesim_govdesi tr');
+            let metin = "=== SUNTALAM DOLAP KESİM LİSTESİ ===\n";
+            metin += "Parça Adı\tAdet\tKesim Boy (mm)\tKesim En (mm)\tKenar Bandı\tBölüm\n";
+
+            satirlar.forEach(tr => {
+                const hucreler = tr.querySelectorAll('td');
+                if (hucreler.length >= 6) {
+                    const pAd = hucreler[0].innerText.trim();
+                    const pAdet = hucreler[1].innerText.trim();
+                    const pBoy = hucreler[2].innerText.trim();
+                    const pEn = hucreler[3].innerText.trim();
+                    const pBant = hucreler[4].innerText.trim();
+                    const pBolum = hucreler[5].innerText.trim();
+                    metin += `${pAd}\t${pAdet}\t${pBoy}\t${pEn}\t${pBant}\t${pBolum}\n`;
+                }
+            });
+
+            const textarea = document.createElement('textarea');
+            textarea.value = metin;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            bildirimGoster('Kesim listesi panoya kopyalandı!');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const tumGirdiler = document.querySelectorAll('input, select');
+            tumGirdiler.forEach(elem => {
+                elem.addEventListener('input', () => {
+                    arayeGuncelle();
+                    hesapla();
+                });
+                elem.addEventListener('change', () => {
+                    arayeGuncelle();
+                    hesapla();
+                });
+            });
+
+            arayeGuncelle();
+            hesapla();
+        });
+
+        if (typeof module !== 'undefined' && module.exports) {
+            module.exports = { DOLAP_CONFIG, hesaplaGeometri, sayiOku, tamsayiOku };
+        }
+    </script>
+</body>
+</html>
