@@ -161,13 +161,14 @@
                             </select>
                         </div>
                         <div id="mentese_kanat_kapsayici">
-                            <label class="block text-xs font-medium text-slate-600 mb-1">Kapak Kanat Sayısı</label>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Ana Bölüm Kapak Kanat Sayısı</label>
                             <select id="inp_kanat" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none font-medium">
                                 <option value="1">1 Kanat</option>
                                 <option value="2" selected>2 Kanat</option>
                                 <option value="3">3 Kanat</option>
                                 <option value="4">4 Kanat</option>
                             </select>
+                            <p class="text-[10px] text-slate-400 mt-1">Süpürge koridoru açıksa onun ayrı kapağı bu sayıya dahil değildir.</p>
                         </div>
                     </div>
 
@@ -718,6 +719,48 @@
             const hatalar = [];
             const uyarilar = [];
 
+            // P1 güvenlik bariyeri: hesap motoru UI dışından da çağrılabildiği için
+            // fiziksel ham girdileri burada doğrula. Negatif/NaN değerler türetilmiş
+            // kesimlere sızmamalıdır.
+            const zorunluSayilar = [
+                ['Panel kalınlığı', t],
+                ['Kenar bandı kalınlığı', b],
+                ['Dış genişlik', W],
+                ['Dış yükseklik', H],
+                ['Dış derinlik', D],
+                ['Baza yüksekliği', H_baza],
+                ['Arkalık kalınlığı', arkalikT],
+                ['Çekmece taban kalınlığı', cekmeceTabanT]
+            ];
+            zorunluSayilar.forEach(([ad, deger]) => {
+                if (!Number.isFinite(deger)) hatalar.push(`${ad} geçerli bir sayı olmalıdır.`);
+            });
+
+            if (Number.isFinite(t) && t <= 0) hatalar.push(`Panel kalınlığı (${t} mm) sıfırdan büyük olmalıdır.`);
+            if (Number.isFinite(b) && b < 0) hatalar.push(`Kenar bandı kalınlığı (${b} mm) negatif olamaz.`);
+            if (Number.isFinite(W) && W <= 0) hatalar.push(`Dış genişlik (${W} mm) sıfırdan büyük olmalıdır.`);
+            if (Number.isFinite(H) && H <= 0) hatalar.push(`Dış yükseklik (${H} mm) sıfırdan büyük olmalıdır.`);
+            if (Number.isFinite(D) && D <= 0) hatalar.push(`Dış derinlik (${D} mm) sıfırdan büyük olmalıdır.`);
+            if (Number.isFinite(H_baza) && H_baza < 0) hatalar.push(`Baza yüksekliği (${H_baza} mm) negatif olamaz.`);
+            if (Number.isFinite(arkalikT) && arkalikT <= 0) hatalar.push(`Arkalık kalınlığı (${arkalikT} mm) sıfırdan büyük olmalıdır.`);
+            if (Number.isFinite(cekmeceTabanT) && cekmeceTabanT <= 0) hatalar.push(`Çekmece taban kalınlığı (${cekmeceTabanT} mm) sıfırdan büyük olmalıdır.`);
+            if (!Number.isInteger(bolmeSayisi) || bolmeSayisi < 1 || bolmeSayisi > 3) {
+                hatalar.push(`Bölme sayısı (${bolmeSayisi}) 1 ile 3 arasında bir tam sayı olmalıdır.`);
+            }
+            if (kapakTipi === '1' && (!Number.isInteger(kanatSayisi) || kanatSayisi < 1 || kanatSayisi > 4)) {
+                hatalar.push(`Menteşeli kapak kanat sayısı (${kanatSayisi}) 1 ile 4 arasında olmalıdır.`);
+            }
+
+            if (cekmeceKonum !== 'yok') {
+                if (!Number.isInteger(cekmeceAdet) || cekmeceAdet < 1 || cekmeceAdet > 4) {
+                    hatalar.push(`Çekmece adedi (${cekmeceAdet}) 1 ile 4 arasında olmalıdır.`);
+                }
+                if (!Number.isFinite(rayBoyu) || rayBoyu <= 0) hatalar.push(`Teleskopik ray boyu (${rayBoyu} mm) sıfırdan büyük olmalıdır.`);
+                if (!Number.isFinite(rayYanBosluk) || rayYanBosluk < 0) hatalar.push(`Ray yan boşluğu (${rayYanBosluk} mm) negatif olamaz.`);
+                if (!Number.isFinite(kutuH) || kutuH <= 0) hatalar.push(`Çekmece kutu yüksekliği (${kutuH} mm) sıfırdan büyük olmalıdır.`);
+                if (!Number.isFinite(cekmeceToplamH) || cekmeceToplamH <= 0) hatalar.push(`Çekmece toplam cephe yüksekliği (${cekmeceToplamH} mm) sıfırdan büyük olmalıdır.`);
+            }
+
             // 1. Kasa Gövde ve Net İç Ölçüler
             // Dış derinlik (D) gerçek bitmiş dış ölçüdür. Arkalık arkadan bindirme çakıldığı için
             // gövde panelinin bitmiş derinliği: D - arkalikT olmalıdır.
@@ -761,6 +804,9 @@
             }
             if (D_raf <= 0) {
                 hatalar.push(`Hesaplanan raf derinliği (${D_raf.toFixed(1)} mm) sıfır veya negatif.`);
+            }
+            if (D_raf_kesim <= 0) {
+                hatalar.push(`Kenar bandı sonrası raf kesim derinliği (${D_raf_kesim.toFixed(1)} mm) sıfır veya negatif.`);
             }
             if (D_kesim <= 0) {
                 hatalar.push(`Gövde kesim derinliği (${D_kesim.toFixed(1)} mm) sıfır veya negatif.`);
@@ -879,6 +925,26 @@
                 if (kutuIcW <= 0) {
                     hatalar.push(`Çekmece kutusu net iç genişliği (${kutuIcW.toFixed(1)} mm) sıfır veya negatif. Ray montaj boşluğunu veya bölme genişliğini kontrol edin.`);
                 }
+            }
+
+            // Menteşeli dış çekmecede tek bir dikdörtgen kanat, hem çekmeceli hem
+            // çekmecesiz bölmeyi aynı anda örtemez. Bu durumda eski model tam boy
+            // kapak üreterek klapalarla çakışıyordu; güvenli tarafta kalıp tasarımı
+            // bloke ediyoruz.
+            const disBolmeCekmecesi = kapakTipi === '1' && cekmeceKonum.startsWith('bolme');
+            if (disBolmeCekmecesi && kanatSayisi < bolmeSayisi) {
+                hatalar.push(`Dış çekmeceli ${bolmeSayisi} bölmeli düzende ${kanatSayisi} menteşeli ana kapak kullanılamaz: bir kapak çekmeceli ve çekmecesiz facade bölgelerini birlikte örter. En az ${bolmeSayisi} ana kapak seçin veya çekmeceyi iç çekmece/sürgülü düzen olarak kullanın.`);
+            }
+
+            // Tek açıklıkta 3+ bağımsız standart tas menteşeli kanat için orta
+            // taşıyıcı/dikme ya da özel katlanır donanım gerekir; mevcut kasa modeli
+            // bunu üretmediği için yanlış nalburiye/kesim vermek yerine engelle.
+            if (kapakTipi === '1' && bolmeSayisi === 1 && kanatSayisi > 2) {
+                hatalar.push(`1 bölmeli dolapta ${kanatSayisi} bağımsız standart menteşeli kanat için ilave taşıyıcı dikme veya özel katlanır kapak donanımı gerekir. Mevcut basit konstrüksiyon en fazla 2 kanadı destekler.`);
+            }
+
+            if (kapakTipi === '1' && kanatSayisi < bolmeSayisi && !disBolmeCekmecesi) {
+                uyarilar.push(`${bolmeSayisi} bölmenin ${kanatSayisi} ana kapakla örtülmesi mümkündür; kapak birleşimleri iç dikmelerle birebir hizalanmayabilir. Menteşe yerlerini montaj öncesi kontrol edin.`);
             }
 
             // P2: Ergonomik ve Tasarım Uyarıları (Modeli bloke etmez, kesim listesi üretilir)
@@ -1451,6 +1517,76 @@
             const arkalikVidaSayisi = Math.ceil(perimetre / 150) + 6;
             vidalar.push(`<strong>${arkalikVidaSayisi} Adet 3.5x20 mm</strong> Geniş Pullu Arkalık Vidası (Maks. 150 mm aralıkla)`);
             vidalar.push(`<strong>1 Paket (50'li)</strong> Renkli Yapışkanlı Vida Tapası (14 mm)`);
+
+            // Son üretim bariyeri: geçerli model hiçbir koşulda sıfır/negatif/NaN
+            // kesim veya fiziksel kapak/klapa çakışması döndürmemelidir.
+            const invariantHatalari = [];
+            const sonluPozitif = v => Number.isFinite(v) && v > 0;
+            const dikdortgenKesisiyor = (a, c, eps = 1e-6) =>
+                a.x < (c.x + c.w - eps) &&
+                (a.x + a.w) > (c.x + eps) &&
+                a.y < (c.y + c.h - eps) &&
+                (a.y + a.h) > (c.y + eps);
+
+            kesimler.forEach(item => {
+                if (!Number.isInteger(item.adet) || item.adet <= 0) {
+                    invariantHatalari.push(`${item.ad}: adet (${item.adet}) pozitif tam sayı değil.`);
+                }
+                if (!sonluPozitif(item.kesimBoy) || !sonluPozitif(item.kesimEn)) {
+                    invariantHatalari.push(`${item.ad}: geçersiz kesim ölçüsü ${item.kesimBoy} × ${item.kesimEn} mm.`);
+                }
+            });
+
+            facadeZones.forEach(zone => {
+                if (![zone.x, zone.y, zone.w, zone.h].every(Number.isFinite) || zone.w <= 0 || zone.h <= 0) {
+                    invariantHatalari.push(`${zone.id}: facade zone ölçüsü geçersiz.`);
+                }
+            });
+
+            for (let i = 0; i < facadeZones.length; i++) {
+                for (let j = i + 1; j < facadeZones.length; j++) {
+                    if (dikdortgenKesisiyor(facadeZones[i], facadeZones[j])) {
+                        invariantHatalari.push(`Facade zone çakışması: ${facadeZones[i].id} ↔ ${facadeZones[j].id}.`);
+                    }
+                }
+            }
+
+            kapakModelleri.forEach(kapak => {
+                if (![kapak.x, kapak.y, kapak.w, kapak.h].every(Number.isFinite) || kapak.w <= 0 || kapak.h <= 0) {
+                    invariantHatalari.push(`${kapak.ad}: kapak geometrisi geçersiz.`);
+                }
+            });
+
+            klapalarListesi.forEach(klapa => {
+                if (![klapa.x, klapa.y, klapa.w, klapa.h].every(Number.isFinite) || klapa.w <= 0 || klapa.h <= 0) {
+                    invariantHatalari.push(`${klapa.ad}: klapa geometrisi geçersiz.`);
+                }
+            });
+
+            // Sürgü kapakların birbirinin üzerine bindirilmesi tasarım gereğidir;
+            // burada yalnız dış çekmece klapası ile kapak çakışmasını yasaklıyoruz.
+            if (!isIcCekmece && klapalarListesi.length > 0) {
+                kapakModelleri.forEach(kapak => {
+                    klapalarListesi.forEach(klapa => {
+                        if (dikdortgenKesisiyor(kapak, klapa)) {
+                            invariantHatalari.push(`Kapak/çekmece cephe çakışması: ${kapak.ad} ↔ ${klapa.ad}.`);
+                        }
+                    });
+                });
+            }
+
+            if (invariantHatalari.length > 0) {
+                return {
+                    gecerli: false,
+                    hatalar: [...hatalar, ...invariantHatalari.map(h => `Model invariant hatası: ${h}`)],
+                    uyarilar,
+                    kasa: { W, H, D, H_baza, t, b, arkalikT, cekmeceTabanT, D_govde, D_kesim, W_ic, H_ic, D_ic },
+                    kesimler: [],
+                    vidalar: [],
+                    nalburiye: [],
+                    svgData: null
+                };
+            }
 
             return {
                 gecerli: true,
